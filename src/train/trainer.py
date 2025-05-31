@@ -1,7 +1,7 @@
 import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
-from src.test.evaluation import compute_score
+from test.evaluation import compute_score
 from pathlib import Path
 
 from warnings import warn

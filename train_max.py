@@ -4,22 +4,22 @@ ssl._create_default_https_context = ssl._create_unverified_context
 from pathlib import Path
 import torch
 import copy
-from src.bitbybit.utils.models import get_backbone
-from src.bitbybit.utils.data import (
+from bitbybit.utils.models import get_backbone
+from bitbybit.utils.data import (
     get_loaders,
     CIFAR10_MEAN,
     CIFAR10_STD,
     CIFAR100_MEAN,
     CIFAR100_STD,
 )
-from src import bitbybit as bb
-from src.bitbybit.config.resnet20 import resnet20_full_patch_config
+import bitbybit as bb
+from bitbybit.config.resnet20 import resnet20_full_patch_config
 
-from src.train.logger import get_writer
-from src.train.trainer import train_model, evaluate_model
+from train.logger import get_writer
+from train.trainer import train_model, evaluate_model
 
 # Import evaluation utilities
-from src.test.evaluation import evaluate_accuracy, compute_score
+from test.evaluation import evaluate_accuracy, compute_score
 
 def main():
     # Determine device

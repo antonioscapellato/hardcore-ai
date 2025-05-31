@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import math
 import os
-from src.bitbybit.kernel import RandomProjKernel, LearnedProjKernel
+from bitbybit.kernel import RandomProjKernel, LearnedProjKernel
 
 
 def test_random_proj_kernel():

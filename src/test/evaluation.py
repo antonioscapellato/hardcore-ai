@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from src.bitbybit.utils.score import calculate_submission_score
+from bitbybit.utils.score import calculate_submission_score
 
 def evaluate_accuracy(
     model: nn.Module,
