@@ -140,3 +140,63 @@
 2025-05-31 12:39:08,358 - INFO - Evaluation completed in 1.59 seconds
 2025-05-31 12:39:08,358 - INFO - Test Accuracy: 9.80%
 2025-05-31 12:39:08,358 - INFO - Training script completed
+2025-05-31 14:12:47,889 - INFO - Starting ResNet-20 training script for CIFAR-10 and CIFAR-100
+2025-05-31 14:12:47,889 - INFO - Using device: cpu
+2025-05-31 14:12:47,889 - INFO - Defined data transformations
+2025-05-31 14:12:47,889 - INFO - Loading CIFAR-10 dataset
+2025-05-31 14:12:58,506 - INFO - Initializing ResNet-20 for CIFAR-10
+2025-05-31 14:12:58,514 - INFO - Training on CIFAR-10
+2025-05-31 14:12:58,514 - INFO - Starting training for 5 epochs on cpu
+2025-05-31 14:13:59,761 - INFO - Epoch [1/5], Step [100/391], Loss: 1.9800, Batch Time: 0.60s
+2025-05-31 14:15:01,116 - INFO - Epoch [1/5], Step [200/391], Loss: 1.7321, Batch Time: 0.65s
+2025-05-31 14:16:02,682 - INFO - Epoch [1/5], Step [300/391], Loss: 1.6257, Batch Time: 0.60s
+2025-05-31 14:16:57,957 - INFO - Epoch 1 completed in 239.44 seconds
+2025-05-31 14:17:59,360 - INFO - Epoch [2/5], Step [100/391], Loss: 1.3946, Batch Time: 0.60s
+2025-05-31 14:19:00,914 - INFO - Epoch [2/5], Step [200/391], Loss: 1.2534, Batch Time: 0.60s
+2025-05-31 14:20:02,489 - INFO - Epoch [2/5], Step [300/391], Loss: 1.1645, Batch Time: 0.64s
+2025-05-31 14:20:57,929 - INFO - Epoch 2 completed in 239.97 seconds
+2025-05-31 14:21:59,504 - INFO - Epoch [3/5], Step [100/391], Loss: 1.0274, Batch Time: 0.60s
+2025-05-31 14:23:00,966 - INFO - Epoch [3/5], Step [200/391], Loss: 0.9492, Batch Time: 0.60s
+2025-05-31 14:24:02,429 - INFO - Epoch [3/5], Step [300/391], Loss: 0.9132, Batch Time: 0.59s
+2025-05-31 14:24:57,993 - INFO - Epoch 3 completed in 240.06 seconds
+2025-05-31 14:25:59,150 - INFO - Epoch [4/5], Step [100/391], Loss: 0.8147, Batch Time: 0.59s
+2025-05-31 14:27:00,829 - INFO - Epoch [4/5], Step [200/391], Loss: 0.8180, Batch Time: 0.60s
+2025-05-31 14:28:03,319 - INFO - Epoch [4/5], Step [300/391], Loss: 0.7902, Batch Time: 0.60s
+2025-05-31 14:29:00,566 - INFO - Epoch 4 completed in 242.57 seconds
+2025-05-31 14:30:03,926 - INFO - Epoch [5/5], Step [100/391], Loss: 0.7305, Batch Time: 0.75s
+2025-05-31 14:31:09,336 - INFO - Epoch [5/5], Step [200/391], Loss: 0.7289, Batch Time: 0.62s
+2025-05-31 14:32:11,215 - INFO - Epoch [5/5], Step [300/391], Loss: 0.7103, Batch Time: 0.60s
+2025-05-31 14:33:07,408 - INFO - Epoch 5 completed in 246.84 seconds
+2025-05-31 14:33:07,424 - INFO - Saved checkpoint: submission_checkpoints/cifar10_resnet20.pth
+2025-05-31 14:33:07,424 - INFO - Starting model evaluation
+2025-05-31 14:33:18,603 - INFO - Evaluation completed in 11.18 seconds
+2025-05-31 14:33:18,604 - INFO - Test Accuracy: 69.92%
+2025-05-31 14:33:18,604 - INFO - Loading CIFAR-100 dataset
+2025-05-31 14:33:28,991 - INFO - Initializing ResNet-20 for CIFAR-100
+2025-05-31 14:33:28,998 - INFO - Training on CIFAR-100
+2025-05-31 14:33:28,999 - INFO - Starting training for 5 epochs on cpu
+2025-05-31 14:34:30,960 - INFO - Epoch [1/5], Step [100/391], Loss: 4.3624, Batch Time: 0.75s
+2025-05-31 14:35:33,131 - INFO - Epoch [1/5], Step [200/391], Loss: 4.0459, Batch Time: 0.64s
+2025-05-31 14:36:35,277 - INFO - Epoch [1/5], Step [300/391], Loss: 3.9000, Batch Time: 0.60s
+2025-05-31 14:37:31,486 - INFO - Epoch 1 completed in 242.49 seconds
+2025-05-31 14:38:33,272 - INFO - Epoch [2/5], Step [100/391], Loss: 3.6727, Batch Time: 0.60s
+2025-05-31 14:39:35,044 - INFO - Epoch [2/5], Step [200/391], Loss: 3.5708, Batch Time: 0.60s
+2025-05-31 14:40:37,957 - INFO - Epoch [2/5], Step [300/391], Loss: 3.4591, Batch Time: 0.60s
+2025-05-31 14:41:33,845 - INFO - Epoch 2 completed in 242.36 seconds
+2025-05-31 14:42:35,704 - INFO - Epoch [3/5], Step [100/391], Loss: 3.2608, Batch Time: 0.60s
+2025-05-31 14:43:37,413 - INFO - Epoch [3/5], Step [200/391], Loss: 3.1537, Batch Time: 0.60s
+2025-05-31 14:44:39,376 - INFO - Epoch [3/5], Step [300/391], Loss: 3.0256, Batch Time: 0.61s
+2025-05-31 14:45:34,888 - INFO - Epoch 3 completed in 241.04 seconds
+2025-05-31 14:46:35,915 - INFO - Epoch [4/5], Step [100/391], Loss: 2.8149, Batch Time: 0.59s
+2025-05-31 14:47:37,193 - INFO - Epoch [4/5], Step [200/391], Loss: 2.7596, Batch Time: 0.59s
+2025-05-31 14:48:38,577 - INFO - Epoch [4/5], Step [300/391], Loss: 2.6841, Batch Time: 0.59s
+2025-05-31 14:49:35,464 - INFO - Epoch 4 completed in 240.58 seconds
+2025-05-31 14:50:37,213 - INFO - Epoch [5/5], Step [100/391], Loss: 2.4934, Batch Time: 0.60s
+2025-05-31 14:51:38,601 - INFO - Epoch [5/5], Step [200/391], Loss: 2.5260, Batch Time: 0.60s
+2025-05-31 14:52:40,357 - INFO - Epoch [5/5], Step [300/391], Loss: 2.4393, Batch Time: 0.59s
+2025-05-31 14:53:36,778 - INFO - Epoch 5 completed in 241.31 seconds
+2025-05-31 14:53:36,790 - INFO - Saved checkpoint: submission_checkpoints/cifar100_resnet20.pth
+2025-05-31 14:53:36,790 - INFO - Starting model evaluation
+2025-05-31 14:53:48,291 - INFO - Evaluation completed in 11.50 seconds
+2025-05-31 14:53:48,291 - INFO - Test Accuracy: 26.15%
+2025-05-31 14:53:48,291 - INFO - Training script completed
