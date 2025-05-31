@@ -6,7 +6,7 @@ from torch.nn.modules.utils import _pair
 import math
 
 from ._base import _HashableModule
-from src.bitbybit.kernel import kernel_factory
+from bitbybit.kernel import kernel_factory
 
 DEFAULT_KERNEL_TYPE = "random_projection"
 DEFAULT_HASH_LENGTH = 4096
