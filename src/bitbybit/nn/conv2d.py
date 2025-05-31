@@ -3,7 +3,6 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn.modules.utils import _pair
 import math
-from typing import Self
 
 from ._base import _HashableModule
 from src.bitbybit.kernel import kernel_factory
