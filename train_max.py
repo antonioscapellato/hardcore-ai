@@ -1,9 +1,14 @@
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
+import numpy as np
+import torch.nn as nn
+from typing import Dict
+import math
 
 from pathlib import Path
 import torch
 import copy
+
 from src.bitbybit.utils.models import get_backbone
 from src.bitbybit.utils.data import (
     get_loaders,
@@ -20,6 +25,42 @@ from src.train.trainer import train_model, evaluate_model
 
 # Import evaluation utilities
 from src.test.evaluation import evaluate_accuracy, compute_score
+
+
+
+def next_pow2(x: int) -> int:
+    return 1 << (x - 1).bit_length()
+
+def update_hash_lengths(
+    model: nn.Module,
+    cfg: dict,
+    collision: int = 4,           # desired (# real params)/(# buckets)
+    min_len: int = 256,
+    max_len: int = 16_384,
+) -> dict:
+    """
+    Return a *new* config with hash_length auto-set per layer.
+    """
+    new_cfg = copy.deepcopy(cfg)
+    base    = cfg.get("common_params", {})
+
+    for name, mod in model.named_modules():
+        if not isinstance(mod, (nn.Conv2d, nn.Linear)):
+            continue
+
+        P = mod.weight.numel()                                # real parameter count
+        L = max(min_len, min(max_len, P // collision))        # bucket count target
+        L = next_pow2(L)                                      # round to power-of-two
+
+        layer_cfg = new_cfg.get(name, {}).copy()              # keep other fields
+        # inherit untouched fields from common_params if missing
+        for k in ("hash_kernel_type", "input_tile_size", "output_tile_size"):
+            layer_cfg.setdefault(k, base.get(k))
+        layer_cfg["hash_length"] = L
+        new_cfg[name] = layer_cfg
+
+    return new_cfg
+
 
 def main():
     # Determine device
@@ -70,7 +111,8 @@ def main():
         original_model.to(device)
     
         # Patch the model with hash kernels
-        hashed_model = bb.patch_model(model, config=resnet20_full_patch_config)
+        updated_conf = update_hash_lengths(model, resnet20_full_patch_config)
+        hashed_model = bb.patch_model(model, config=updated_conf)
         hashed_model.to(device)
     
         # Initialize loss and optimizer
