@@ -24,7 +24,7 @@ def get_backbone(
         A PyTorch nn.Module model.
     """
     model_kwargs = {"pretrained": pretrained}
-
+    torch.hub._validate_not_a_forked_repo=lambda a,b,c: True
     model: nn.Module = torch.hub.load(
         repo_or_dir="chenyaofo/pytorch-cifar-models",
         model=name,

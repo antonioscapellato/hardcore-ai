@@ -12,7 +12,7 @@ class RandomProjKernel(_HashKernel):
     ) -> None:
         super().__init__(in_features, out_features, hash_length)
 
-        initial_proj_mat = torch.randn(hash_length, self.in_features)
+        initial_proj_mat = torch.randn(hash_length, self.in_features, requires_grad=False)
         self.register_buffer("_random_projection_matrix", initial_proj_mat)
 
     @property
@@ -41,7 +41,7 @@ class RandomProjKernel(_HashKernel):
             torch.Tensor: Estimated cosine similarities (e.g., B, M).
         """
         dot = codes_1 @ codes_2_matmuled
-        return (codes_1.shape[-1] - dot) // 2 # Hamming distance, est cos(theta)
+        return (codes_1.shape[-1] - dot) / 2 # Hamming distance, est cos(theta)
 
 
     def extra_repr(self) -> str:
