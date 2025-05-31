@@ -5,14 +5,13 @@ from ._base import _HashKernel
 
 
 class RandomProjKernel(_HashKernel):
-    _random_projection_matrix: torch.Tensor  # type: ignore (K, N_feat_of_vector_to_hash)
 
     def __init__(
         self, in_features: int, out_features: int, hash_length: int, **kwargs
     ) -> None:
         super().__init__(in_features, out_features, hash_length)
 
-        initial_proj_mat = torch.randn(hash_length, self.in_features, requires_grad=False)
+        initial_proj_mat = torch.randn(hash_length, self.in_features)
         self.register_buffer("_random_projection_matrix", initial_proj_mat)
 
     @property
@@ -20,29 +19,29 @@ class RandomProjKernel(_HashKernel):
         return self._random_projection_matrix
 
     def _compute_codes_internal(self, unit_vectors: torch.Tensor) -> torch.Tensor:
-        """
-        Computes binary hash codes for unit input vectors using self.projection_matrix.
-        Args:
-            vectors (torch.Tensor): Input tensor of shape (..., features_dim).
-                                            features_dim must match self.projection_matrix's second dim.
-        Returns:
-            torch.Tensor: Binary codes {-1, 1} of shape (..., self.hash_length).
-        """
-        x_proj = unit_vectors @ self.projection_matrix.T # (B, N_in) @ (N_in, K) -> (B, K)
-        return torch.sign(x_proj)
+        # Compute binary hash codes using fixed random projections
+        # Input: unit_vectors (..., in_features), projection_matrix (hash_length, in_features)
+        # Operation: sign(unit_vectors @ projection_matrix.T) as per DeepCAM Page 2
+        # Output shape: (..., hash_length) with values {-1, 1}
+        projection = unit_vectors @ self.projection_matrix.T
+        codes = torch.sign(projection)
+        return codes
 
-    def _estimate_cosine_internal(self, codes_1: torch.Tensor, codes_2_matmuled: torch.Tensor) -> torch.Tensor:
-        """
-        Estimates cosine similarity based on hash codes.
-        Args:
-            codes_1 (torch.Tensor): Hash codes for first set of vectors (e.g., B, K).
-            codes_2_matmuled (torch.Tensor): Hash codes for second set, transposed for matmul (e.g., K, M).
-        Returns:
-            torch.Tensor: Estimated cosine similarities (e.g., B, M).
-        """
-        dot = codes_1 @ codes_2_matmuled
-        return (codes_1.shape[-1] - dot) / 2 # Hamming distance, est cos(theta)
-
+    def _estimate_cosine_internal(
+        self, codes_1: torch.Tensor, codes_2_matmuled: torch.Tensor
+    ) -> torch.Tensor:
+        # Estimate cosine similarity between two sets of hash codes
+        # codes_1: (B, K), codes_2_matmuled: (K, N_out), where K is hash_length
+        # Step 1: Compute sum of products (S) efficiently via matrix multiplication
+        # Step 2: Calculate hamming distance (HD) as (K - S) / 2, since codes are {-1, 1}
+        # Step 3: Approximate angle theta = (pi / K) * HD (DeepCAM Eq. 3)
+        # Step 4: Return cos(theta) for geometric dot-product (DeepCAM Eq. 4)
+        K = self.hash_length
+        S = codes_1 @ codes_2_matmuled  # Shape: (B, N_out), S = sum of a_i * b_i
+        HD = (K - S) / 2.0  # Hamming distance, float for precision
+        theta_approx = (math.pi / K) * HD  # Angle approximation
+        cos_est = torch.cos(theta_approx)  # Cosine similarity
+        return cos_est
 
     def extra_repr(self) -> str:
         return (

@@ -4,11 +4,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
-from src.bitbybit.utils.models import get_backbone
-from src.bitbybit.utils.data import get_loaders, CIFAR10_MEAN, CIFAR10_STD, CIFAR100_MEAN, CIFAR100_STD
-import src.bitbybit as bb
-from src.bitbybit.config.resnet20 import resnet20_full_patch_config
-from src.bitbybit.config.resnet20_learned import resnet20_full_patch_config_learned
+from bitbybit.utils.models import get_backbone
+from bitbybit.utils.data import get_loaders, CIFAR10_MEAN, CIFAR10_STD, CIFAR100_MEAN, CIFAR100_STD
+import bitbybit as bb
+from bitbybit.config.resnet20 import resnet20_full_patch_config
 
 OUTPUT_DIR = Path(__file__).parent / "submission_checkpoints"
 
@@ -34,7 +33,7 @@ def train_model(model, train_loader, test_loader, model_name, epochs=5, device="
 
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=0.01)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
     scheduler = lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
 
     for epoch in range(epochs):
@@ -96,7 +95,7 @@ def train_model(model, train_loader, test_loader, model_name, epochs=5, device="
     print(f"{'='*50}\n")
 
     # Store hashed model
-    hashed_model = bb.patch_model(model, config=resnet20_full_patch_config_learned)
+    hashed_model = bb.patch_model(model, config=resnet20_full_patch_config)
     torch.save(hashed_model.state_dict(), OUTPUT_DIR / f"{model_name}.pth")
 
 def main():
@@ -124,7 +123,7 @@ def main():
 
     models = [
         ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader),
-        # ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader),
+        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader),
     ]
 
     for model_name, model, train_loader, test_loader in models:
