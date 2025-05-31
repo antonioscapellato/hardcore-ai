@@ -4,8 +4,6 @@ from torch.utils.tensorboard import SummaryWriter
 from test.evaluation import compute_score
 from pathlib import Path
 
-from warnings import warn
-
 def train_model(model: torch.nn.Module,
                 original_model: torch.nn.Module,
                 train_loader: torch.utils.data.DataLoader,
@@ -64,11 +62,6 @@ def train_model(model: torch.nn.Module,
             writer.add_scalar("Train/Batch_Loss", batch_loss, global_step)
             writer.add_scalar("Train/Batch_Accuracy", batch_acc, global_step)
             writer.add_scalar("Train/Batch_Time", batch_time, global_step)
-            warn(f"[Epoch {epoch+1}/{num_epochs}] "
-                      f"Batch {batch_idx}/{len(train_loader)} - "
-                      f"Loss: {batch_loss:.4f} - "
-                      f"Acc: {batch_acc:.2f}% - "
-                      f"Time: {batch_time:.3f}s")
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         epoch_time = time.time() - epoch_start_time
