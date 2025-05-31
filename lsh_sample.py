@@ -54,21 +54,36 @@ approx_sim = hamming_similarity(h_x, h_w)
 true_sim = np.dot(x, w) / (np.linalg.norm(x) * np.linalg.norm(w))
 
 # --------------------------------------------------------
+# Step 5: Compute signed percentage accuracy drop
+# --------------------------------------------------------
+
+# Absolute difference
+abs_drop = abs(true_sim - approx_sim)
+
+# Signed % difference: positive = overestimation, negative = underestimation
+if abs(true_sim) > 1e-6:  # Avoid divide-by-zero if true_sim is nearly 0
+    percent_error = ((approx_sim - true_sim) / abs(true_sim)) * 100
+else:
+    percent_error = float('inf')  # Not meaningful if true_sim ~ 0
+
+# --------------------------------------------------------
 # Output Results
 # --------------------------------------------------------
 
-print(f"Approximate similarity (LSH): {approx_sim:.3f}")
-print(f"True cosine similarity:       {true_sim:.3f}")
+print(f"Approximate similarity (LSH):       {approx_sim:.3f}")
+print(f"True cosine similarity:             {true_sim:.3f}")
+print(f"Absolute accuracy drop:             {abs_drop:.3f}")
+if percent_error != float('inf'):
+    sign = '+' if percent_error >= 0 else ''
+    print(f"Signed % accuracy difference:       {sign}{percent_error:.1f}%")
+else:
+    print(f"Signed % accuracy difference:       Undefined (true similarity ≈ 0)")
 
 # --------------------------------------------------------
-# 🔍 Theory Summary:
+# 🔍 Summary:
 # --------------------------------------------------------
 
-# - LSH replaces exact dot products with fast bitwise operations.
-# - The hash codes encode vector directions using signs of dot products.
-# - Similar vectors (with small angles between them) will hash to similar codes.
-# - This allows approximate, energy-efficient similarity computation.
-# - Instead of computing full dot products (128 multiplications + adds),
-#   we only compare binary strings of length 32 here (very fast, low-power).
-#
-# This forms the basis of LSH-based approximate inference.
+# - You now see both the absolute error and signed % error between LSH and true similarity.
+# - Positive % = LSH overestimated similarity
+# - Negative % = LSH underestimated similarity
+# - Use this to evaluate trade-offs between energy-efficiency and accuracy
