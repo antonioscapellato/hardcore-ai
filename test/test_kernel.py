@@ -1,6 +1,7 @@
 import torch
 import matplotlib.pyplot as plt
 import math
+import os
 from src.bitbybit.kernel import RandomProjKernel, LearnedProjKernel
 
 
@@ -54,7 +55,7 @@ def get_threshold(hash_length, dim):
     for dot products scales as O(dim / hash_length), we set the threshold for
     mean absolute error to dim / sqrt(hash_length).
     """
-    return 2*float(dim) / math.sqrt(hash_length)
+    return 1.35*float(dim) / math.sqrt(hash_length)
 
 
 def test_kernel_sweep(): 
@@ -63,7 +64,7 @@ def test_kernel_sweep():
     compute errors, and plot them if all tests pass.
     """
     # List of input/output dimensions to test
-    dims_list = [8, 16, 32]
+    dims_list = [8, 16, 32, 64]
     # Hash lengths: powers of 2 from 32 to 4096
     hash_length_list = [2 ** i for i in range(5, 13)]
 
@@ -71,8 +72,10 @@ def test_kernel_sweep():
     learning_rate = 0.01
 
     plt.figure(figsize=(10, 8))
+    colors = ['C0', 'C1', 'C2', 'C3']
 
-    for dim in dims_list:
+    for idx, dim in enumerate(dims_list):
+        color = colors[idx]
         in_features = dim
         out_features = dim
 
@@ -122,8 +125,8 @@ def test_kernel_sweep():
             print(f"LearnedProjKernel - dim={dim}, hash_length={hash_length}, error={error}")
 
         # Plot errors for this dimension
-        plt.plot(hash_length_list, random_errors, label=f'Random d={dim}', marker='o')
-        plt.plot(hash_length_list, learned_errors, label=f'Learned d={dim}', marker='s')
+        plt.plot(hash_length_list, random_errors, label=f'Random d={dim}', marker='o', color=color, linestyle='-')
+        plt.plot(hash_length_list, learned_errors, label=f'Learned d={dim}', marker='s', color=color, linestyle='--')
 
     plt.xlabel('Hash Length')
     plt.ylabel('Mean Absolute Error')
@@ -131,6 +134,10 @@ def test_kernel_sweep():
     plt.xscale('log', base=2)
     plt.legend()
     plt.grid(True)
+    # Save plot as PDF in output directory
+    output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
+    plt.savefig(os.path.join(output_dir, "kernel_error_plot.pdf"))
     plt.show()
 
 
