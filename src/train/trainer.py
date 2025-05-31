@@ -17,7 +17,7 @@ def train_model(model: torch.nn.Module,
                 writer: SummaryWriter,
                 output_dir: Path,
                 model_name: str,
-                log_interval: int = 1) -> None:
+                log_interval: int = 10) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
     to both console and TensorBoard. Also evaluates on test set and logs submission score
