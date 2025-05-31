@@ -1,8 +1,12 @@
 import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
+from src.test.evaluation import compute_score
+
+from warnings import warn
 
 def train_model(model: torch.nn.Module,
+                original_model: torch.nn.Module,
                 train_loader: torch.utils.data.DataLoader,
                 test_loader: torch.utils.data.DataLoader,
                 criterion: torch.nn.Module,
@@ -10,10 +14,11 @@ def train_model(model: torch.nn.Module,
                 num_epochs: int,
                 device: torch.device,
                 writer: SummaryWriter,
-                log_interval: int = 10) -> None:
+                log_interval: int = 1) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
-    to both console and TensorBoard. Also evaluates on test set after each epoch.
+    to both console and TensorBoard. Also evaluates on test set and logs submission score
+    after each epoch.
     """
     model.train()
     global_step = 0
@@ -55,6 +60,11 @@ def train_model(model: torch.nn.Module,
             writer.add_scalar("Train/Batch_Loss", batch_loss, global_step)
             writer.add_scalar("Train/Batch_Accuracy", batch_acc, global_step)
             writer.add_scalar("Train/Batch_Time", batch_time, global_step)
+            warn(f"[Epoch {epoch+1}/{num_epochs}] "
+                      f"Batch {batch_idx}/{len(train_loader)} - "
+                      f"Loss: {batch_loss:.4f} - "
+                      f"Acc: {batch_acc:.2f}% - "
+                      f"Time: {batch_time:.3f}s")
 
         avg_epoch_loss = epoch_loss / len(train_loader)
         epoch_time = time.time() - epoch_start_time
@@ -66,6 +76,11 @@ def train_model(model: torch.nn.Module,
 
         # Evaluate on test set after each epoch
         evaluate_model(model, test_loader, criterion, device, writer, epoch + 1)
+
+        # Compute and log submission score
+        orig_acc, hashed_acc, score = compute_score(original_model, model, test_loader, device)
+        print(f"[Epoch {epoch+1}/{num_epochs}] Submission Score: {score:.4f}")
+        writer.add_scalar("Score/Submission_Score", score, epoch + 1)
 
 def evaluate_model(model: torch.nn.Module,
                    test_loader: torch.utils.data.DataLoader,

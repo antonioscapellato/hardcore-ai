@@ -65,20 +65,32 @@ def main():
     for model_name, model, train_loader, test_loader in models:
         print(f"Starting training for {model_name} on device {device}")
 
+        # Keep a copy of the original pretrained model for scoring
+        original_model = copy.deepcopy(model)
+        original_model.to(device)
+    
         # Patch the model with hash kernels
         hashed_model = bb.patch_model(model, config=resnet20_full_patch_config)
         hashed_model.to(device)
     
         # Initialize loss and optimizer
         criterion = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(hashed_model.parameters(), lr=learning_rate)
+        # Freeze all parameters except learned projection matrices
+        for param in hashed_model.parameters():
+            param.requires_grad = False
+        # Unfreeze learned projection matrices
+        for module in hashed_model.modules():
+            if isinstance(module, bb.LearnedProjKernel):
+                module.projection_matrix.requires_grad = True
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, hashed_model.parameters()), lr=learning_rate)
     
         # Initialize TensorBoard writer
         writer = get_writer(str(OUTPUT_DIR), model_name)
     
-        # Train and evaluate (now including test_loader)
+        # Train and evaluate (now passing original_model to compute scores)
         train_model(
             hashed_model,
+            original_model,
             train_loader,
             test_loader,
             criterion,
@@ -120,4 +132,5 @@ def main():
         writer.close()
 
 if __name__ == "__main__":
+    print(">>> Launching train_max.py", flush=True)
     main()
