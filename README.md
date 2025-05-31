@@ -1,176 +1,132 @@
 # Hardcore AI 02
 ### Hashing Towards Energy-Efficient AI Inference (Software Track)
 
-"Hashing Towards Energy-Efficient AI Inference" hackathon! We are building software for a conceptual energy-efficient AI accelerator that leverages Locality Sensitive Hashing (LSH) to approximate dot-products in neural networks. This 24-hour challenge focuses on minimizing data movement and utilizing analog in-memory computing (AIMC) with 1-bit ADCs to reduce energy consumption and latency in AI inference.
+### Energy-Efficient AI Inference with LSH
 
-Your mission is to implement LSH-based kernels, optimize them through training, and achieve top accuracy on the CIFAR-10 and CIFAR-100 benchmarks using ResNet20. This README provides a comprehensive guide to help you succeed.
+This project focuses on developing an energy-efficient AI inference system by replacing traditional dot-products in deep neural networks with approximate geometric dot-products using **Locality Sensitive Hashing (LSH)**. The approach leverages **analog in-memory computing (AIMC)** to minimize data movement and reduce energy consumption, while maintaining high accuracy through LSH-based approximations.
 
-Table of Contents
+---
 
-Challenge Overview
-Tasks
-Kernel Engineering
-RandomProjKernel
-LearnedProjKernel
+## Motivation
 
+Deep neural networks (DNNs), particularly large language models (LLMs), are growing rapidly in size and complexity. However, the primary cost in deployed systems is no longer arithmetic throughput but the **energy and latency** associated with transferring parameters and activations between processing elements and external memory. Traditional digital approaches are becoming unsustainable for future models.
 
-Training Strategy
+**Analog in-memory computing (AIMC)** addresses this by performing multiply-accumulate (MAC) operations directly within memory arrays, significantly reducing data movement and improving energy efficiency. However, AIMC requires quantization of analog dot-products, typically using power-hungry analog-to-digital converters (ADCs). This project removes high-resolution ADCs from the critical path by using **1-bit ADCs** and reconstructing outputs via **Hamming distance calculations** against pre-encoded weight patterns, a technique based on LSH.
 
+---
 
-Evaluation and Optimization
-Submission
-Time Management (24-Hour Hackathon)
-Prerequisites
-References
-Leaderboard and Scoring
-Conclusion
+## Objectives
 
+The main goals of this project are:
+- Design and implement **LSH-based kernels** (`RandomProjKernel` and `LearnedProjKernel`) to approximate dot-products in neural networks.
+- Develop data-driven methods to **learn or adapt hash functions** and optimize for accuracy vs. efficiency trade-offs.
+- Evaluate the approach on benchmark deep-learning workloads (CIFAR-10 and CIFAR-100 with ResNet20) and compete on a public leaderboard.
 
-Challenge Overview
-The "Hashing Towards Energy-Efficient AI Inference" hackathon challenges participants to develop software that leverages Locality Sensitive Hashing (LSH) to approximate dot-products in neural networks. This approach aims to reduce energy consumption and latency in AI inference by minimizing data movement and utilizing analog in-memory computing (AIMC) with 1-bit ADCs.
-Key goals:
+---
 
-Implement LSH-based kernels to approximate multiply-accumulate operations.
-Devise data-driven methods to optimize hash functions and quantization parameters.
-Evaluate your solution on benchmark deep-learning workloads (CIFAR-10 and CIFAR-100 with ResNet20).
+## Implementation Details
 
+### RandomProjKernel
+The `RandomProjKernel` uses fixed random projections to hash weights and inputs, approximating dot-products via Hamming distance calculations.
 
-Tasks
-Kernel Engineering
-You will implement two subclasses inside the bitbybit.kernel module:
-RandomProjKernel
+- **Normalization**: Both the weight matrix rows \( W \) and the input vector \( x \) are normalized to unit length.
+- **Projection Matrix**: A random matrix \( P \) (shape \([k, \text{input_dim}]\)) is generated from a standard normal distribution.
+- **Hash Codes**:
+  - Weights: \( h_W = \text{sign}(W @ P^T) \) (pre-computed).
+  - Inputs: \( h_x = \text{sign}(P @ x) \) (computed during inference).
+- **Dot-Product Approximation**:
+  - Compute \( s = \frac{h_W @ h_x}{k} \).
+  - Approximate \( W @ x \) as \( y = \cos\left(\frac{\pi}{2} \cdot (1 - s)\right) \).
 
-Purpose: Approximate dot-products using fixed random projections (inspired by DeepCAM).
-Key Steps:
-Normalize weight matrix rows and input vectors to unit length.
-Generate a random projection matrix ( P ) (shape ([k, \text{input_dim}])).
-Compute hash codes for weights (( h_W = \text{sign}(W @ P^T) )) and inputs (( h_x = \text{sign}(P @ x) )).
-Approximate the dot-product using Hamming distance: ( s = \frac{h_W @ h_x}{k} ), then ( y = \cos\left(\frac{\pi}{2} \cdot (1 - s)\right) ).
+### LearnedProjKernel
+The `LearnedProjKernel` optimizes the projection matrix end-to-end, improving accuracy over random projections.
 
+- **Learnable Parameter**: The projection matrix \( P \) is initialized randomly and trained as a model parameter.
+- **Hash Codes**: Similar to `RandomProjKernel`, using \( h_W = \text{sign}(W @ P^T) \) and \( h_x = \text{sign}(P @ x) \).
+- **Straight-Through Estimator (STE)**: Used to handle the non-differentiable `sign()` function by passing gradients through as if it were the identity function.
+- **Dot-Product Approximation**: Same as in `RandomProjKernel`.
 
+### bitbybit Package Usage
+The `bitbybit` package provides core abstractions and utilities:
+- **`HashKernel`**: Interface for handling unit-vector normalization and hash-based similarity.
+- **`RandomProjKernel`** and **`LearnedProjKernel`**: Implementations of the LSH-based kernels.
+- **`patch_model(model)`**: Utility to replace standard linear layers with hash-based kernels.
 
-Pseudocode:
-# Normalize weights and input
-W_norm = W / ||W||_2
-x_norm = x / ||x||_2
+---
 
-# Random projection matrix P
-P = randn(k, input_dim) / sqrt(input_dim)
+## Training Instructions
 
-# Hash codes
-h_W = sign(W_norm @ P.T)
-h_x = sign(P @ x_norm)
+1. **Load Pre-trained Models**:
+   - Use `get_backbone(model_name)` to load pre-trained ResNet20 models for CIFAR-10 and CIFAR-100.
+   
+2. **Patch Models**:
+   - Use `bb.patch_model(model)` to replace standard linear layers with the implemented hash kernels.
 
-# Approximate dot-product
-s = (h_W @ h_x) / k
-y = cos(pi/2 * (1 - s))
+3. **Fine-Tuning**:
+   - For `RandomProjKernel`, fine-tune the weights \( W \) with a small learning rate (e.g., 0.001).
+   - For `LearnedProjKernel`, jointly optimize \( P \) and \( W \), using STE for gradients through the `sign()` function.
 
-LearnedProjKernel
+4. **Training Hyperparameters**:
+   - Use Adam optimizer with learning rates of 0.001 for weights and 0.0001 for the projection matrix (if applicable).
+   - Train for 10-20 epochs, monitoring validation accuracy.
+   - Experiment with different values of \( k \) (e.g., 32, 64, 128) to balance accuracy and efficiency.
 
-Purpose: Optimize the projection matrix end-to-end for better accuracy.
-Key Steps:
-Initialize ( P ) as a learnable parameter.
-Use a straight-through estimator (STE) to handle gradients through the non-differentiable sign() function.
-Compute hash codes and approximate dot-products similarly to RandomProjKernel.
+5. **Save Checkpoints**:
+   - Save the trained models to `submission_checkpoints/<model_name>.pth` using:
+     ```python
+     torch.save(hashed_model.state_dict(), OUTPUT_DIR / f"{model_name}.pth")
+     ```
 
+---
 
+## Benchmark Datasets and Models
 
-Pseudocode:
-# Learnable projection matrix P
-P = nn.Parameter(randn(k, input_dim) / sqrt(input_dim))
+The project uses the following benchmarks:
+- **Datasets**: CIFAR-10 and CIFAR-100.
+- **Models**: Pre-trained ResNet20 models for each dataset.
 
-# Forward pass
-h_W = sign(W_norm @ P.T)
-h_x = sign(P @ x_norm)
-s = (h_W @ h_x) / k
-y = cos(pi/2 * (1 - s))
+---
 
-# Backward pass with STE: treat sign() as identity
+## Evaluation
 
+- **Accuracy**: The primary evaluation metric is the test set accuracy on CIFAR-10 and CIFAR-100.
+- **Local Validation**: Use the provided skeleton tests to validate your kernels locally before submission.
+- **Hyperparameter Tuning**: Adjust \( k \) and training epochs to optimize the accuracy-efficiency trade-off.
 
-Training Strategy
+---
 
-Model Loading: Use get_backbone(model_name) to load pre-trained ResNet20 models for CIFAR-10 and CIFAR-100.
-Patching: Apply bb.patch_model(model) to replace standard linear layers with your hash kernels.
-Fine-Tuning:
-For RandomProjKernel: Fine-tune the model weights with a small learning rate (e.g., 0.001).
-For LearnedProjKernel: Jointly optimize the projection matrix ( P ) and weights using STE for gradients through sign().
+## Submission Process
 
+1. **Save Trained Models**:
+   - Ensure your trained models are saved in `submission_checkpoints/<model_name>.pth`.
 
-Hyperparameters:
-Optimizer: Adam.
-Learning rates: 0.001 for weights, 0.0001 for ( P ) (if applicable).
-Epochs: 10-20.
-Hash bits (( k )): Experiment with 32, 64, 128.
+2. **Submit Using `publish.py`**:
+   - Use the following command to submit your models to the evaluation server:
+     ```bash
+     python publish.py --team-name <team-name> --key <pre-shared-key>
+     ```
+   - You can submit multiple times during the 24-hour window; each submission overwrites the previous best score.
 
+---
 
+## Leaderboard and Scoring
 
-Training Script Example:
-from bitbybit.utils.models import get_backbone
-import bitbybit as bb
+- **Leaderboard**: Live scores are displayed after each submission.
+- **Scoring**: The score is calculated using `bitbybit.utils.score.calculate_submission_score`.
+- **Final Ranking**: The top-ranked team at the end of the 24-hour period wins.
 
-model = get_backbone("cifar10_resnet20")
-hashed_model = bb.patch_model(model)
-# Implement training loop with STE for LearnedProjKernel
+---
 
+## References
 
-Evaluation and Optimization
+- Charikar, M. (2002). [Similarity Estimation Techniques from Rounding Algorithms](https://www.cs.princeton.edu/courses/archive/spr04/cos598B/bib/CharikarEstim.pdf).
+- Nguyen, T., et al. (2023). [DeepCAM: A Fully CAM-based Inference Accelerator with Variable Hash Lengths for Energy-efficient Deep Neural Networks](https://arxiv.org/abs/2302.04712).
+- Chen, Y., et al. (2019). [SLIDE: In Defense of Smart Algorithms over Hardware Acceleration for Large-Scale Deep Learning Systems](https://arxiv.org/abs/1903.03129).
+- Askary, H. (2023). [Intuitive Explanation of Straight-Through Estimators with PyTorch Implementation](https://hassanaskary.medium.com/intuitive-explanation-of-straight-through-estimators-with-pytorch-implementation-71d99d25d9d0).
 
-Accuracy: Evaluate your models on the CIFAR-10 and CIFAR-100 test sets.
-Tuning: Adjust the number of hash bits (( k )) and training epochs to balance accuracy and computational efficiency.
-Validation: Use the provided skeleton tests for local validation before submitting to the leaderboard.
+---
 
-
-Submission
-
-Packaging: Save your trained models to submission_checkpoints/<model_name>.pth using:torch.save(hashed_model.state_dict(), OUTPUT_DIR / f"{model_name}.pth")
-
-
-Submission Command:python publish.py --team-name <team-name> --key <pre-shared-key>
-
-
-Frequency: You can submit multiple times during the 24-hour window. Each submission overwrites your previous score.
-
-
-Time Management (24-Hour Hackathon)
-Given the tight 24-hour schedule, here's a suggested timeline to maximize productivity:
-
-Hours 1-6: Implement and test RandomProjKernel.
-Hours 6-12: Develop LearnedProjKernel and integrate it into the training script.
-Hours 12-18: Train models, experiment with different values of ( k ), learning rates, and epochs.
-Hours 18-24: Finalize the best-performing models, validate locally, and submit multiple times to refine your leaderboard score.
-
-Tips:
-
-Take short breaks every 2-3 hours to maintain focus and avoid burnout.
-Prioritize getting a working solution first, then optimize for accuracy.
-Use leaderboard feedback to guide your final adjustments.
-
-
-Prerequisites
-
-Python 3.8+
-PyTorch 1.9+
-bitbybit package (provided)
-
-Installation:
-pip install torch torchvision
-# Assuming bitbybit is a local package or installed separately
-
-
-References
-
-Charikar, M. (2002). Similarity Estimation Techniques from Rounding Algorithms
-Nguyen, T. (2023). DeepCAM: A Fully CAM-based Inference Accelerator
-Chen, Y. (2019). SLIDE: In Defense of Smart Algorithms over Hardware Acceleration
-Askary, H. (2023). Intuitive Explanation of Straight-Through Estimators
-
-
-Leaderboard and Scoring
-
-Leaderboard: Live scores are updated immediately after each submission.
-Scoring: The scoring mechanism is defined in bitbybit.utils.score.calculate_submission_score.
-Prize: The top-ranked team at the end of the 24-hour window wins the hackathon.
+**Built with 🔥 by SEMRON AI**
 
 
 Conclusion
