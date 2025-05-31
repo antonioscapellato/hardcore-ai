@@ -2,6 +2,7 @@ import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from src.test.evaluation import compute_score
+from pathlib import Path
 
 from warnings import warn
 
@@ -14,6 +15,8 @@ def train_model(model: torch.nn.Module,
                 num_epochs: int,
                 device: torch.device,
                 writer: SummaryWriter,
+                output_dir: Path,
+                model_name: str,
                 log_interval: int = 1) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
@@ -22,6 +25,7 @@ def train_model(model: torch.nn.Module,
     """
     model.train()
     global_step = 0
+    best_score = float('-inf')
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_start_time = time.time()
@@ -81,6 +85,13 @@ def train_model(model: torch.nn.Module,
         orig_acc, hashed_acc, score = compute_score(original_model, model, test_loader, device)
         print(f"[Epoch {epoch+1}/{num_epochs}] Submission Score: {score:.4f}")
         writer.add_scalar("Score/Submission_Score", score, epoch + 1)
+
+        # Save checkpoint on first epoch or if submission score improves
+        if epoch == 0 or score > best_score:
+            best_score = score
+            checkpoint_path = output_dir / f"{model_name}.pth"
+            torch.save(model.state_dict(), checkpoint_path)
+            print(f"[Epoch {epoch+1}] New best model. Saved checkpoint to {checkpoint_path}")
 
 def evaluate_model(model: torch.nn.Module,
                    test_loader: torch.utils.data.DataLoader,

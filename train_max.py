@@ -98,6 +98,8 @@ def main():
             num_epochs,
             device,
             writer,
+            OUTPUT_DIR,
+            model_name,
             log_interval=50,  # Log every 50 batches
         )
 
@@ -122,11 +124,6 @@ def main():
         # Log hashed_accuracy and submission_score to TensorBoard at final epoch
         writer.add_scalar("Evaluation/Hashed_Accuracy", hashed_accuracy, num_epochs)
         writer.add_scalar("Score/Submission_Score", submission_score, num_epochs)
-
-        # Save the hashed model checkpoint
-        checkpoint_path = OUTPUT_DIR / f"{model_name}.pth"
-        torch.save(hashed_model.state_dict(), checkpoint_path)
-        print(f"Saved model checkpoint to {checkpoint_path} with final accuracy: {accuracy:.2f}%")
 
         # Close the TensorBoard writer
         writer.close()
