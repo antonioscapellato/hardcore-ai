@@ -6,7 +6,7 @@ import math
 from typing import Self
 
 from ._base import _HashableModule
-from bitbybit.kernel import kernel_factory, _HashKernel
+from src.bitbybit.kernel import kernel_factory
 
 DEFAULT_KERNEL_TYPE = "random_projection"
 DEFAULT_HASH_LENGTH = 4096

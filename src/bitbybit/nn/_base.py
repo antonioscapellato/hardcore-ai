@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bitbybit.kernel import _HashKernel
+    pass
 
 
 T_HashableModule = TypeVar("T_HashableModule", bound="_HashableModule")
