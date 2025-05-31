@@ -13,6 +13,13 @@ from torch.utils.data import DataLoader
 import math
 import logging
 import time
+import sys
+from pathlib import Path
+
+# Add the src directory to Python path
+src_path = str(Path(__file__).parent / "src")
+if src_path not in sys.path:
+    sys.path.append(src_path)
 
 # Configure logging
 logging.basicConfig(
@@ -25,7 +32,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-from learned import LearnedProjKernel
+from bitbybit.kernel.learned import LearnedProjKernel
 
 class DeepCAMCNN(nn.Module):
     """
@@ -78,8 +85,12 @@ class DeepCAMCNN(nn.Module):
         )
         logger.info("Initialized LearnedProjKernel for LSH")
         
+        # Initialize learnable class prototypes
+        self.class_prototypes = nn.Parameter(torch.randn(num_classes, hash_length))
+        logger.debug("Initialized learnable class prototypes")
+        
         # L2 norm parameter for scaling the output
-        self.l2_norm = nn.Parameter(torch.ones(1), requires_grad=False)
+        self.l2_norm = nn.Parameter(torch.ones(1), requires_grad=True)
         logger.debug("Initialized L2 norm parameter")
 
     def forward(self, x):
@@ -112,11 +123,10 @@ class DeepCAMCNN(nn.Module):
         codes = self.lsh._compute_codes_internal(unit_vectors)
         logger.debug(f"Generated hash codes shape: {codes.shape}")
         
-        # Generate mock binary codes for output classes
-        # In a real implementation, these would be learned class prototypes
-        codes_2 = torch.randn(x.size(0), self.lsh.out_features, self.hash_length).to(x.device)
-        codes_2 = (codes_2 > 0).float()
-        logger.debug(f"Generated class prototype codes shape: {codes_2.shape}")
+        # Use learned class prototypes
+        codes_2 = torch.sigmoid(self.class_prototypes)  # Convert to [0,1] range
+        codes_2 = codes_2.unsqueeze(0).expand(x.size(0), -1, -1)  # Expand to batch size
+        logger.debug(f"Class prototype codes shape: {codes_2.shape}")
         
         # Estimate cosine similarity between features and class prototypes
         cosine_theta = self.lsh._estimate_cosine_internal(codes, codes_2)

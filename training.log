@@ -1,0 +1,142 @@
+2025-05-31 12:35:32,797 - INFO - Starting DeepCAM CNN training script
+2025-05-31 12:35:32,797 - INFO - Using device: cpu
+2025-05-31 12:35:32,797 - INFO - Defined data transformations
+2025-05-31 12:35:32,797 - INFO - Loading MNIST dataset
+2025-05-31 12:35:41,325 - INFO - Training set size: 60000
+2025-05-31 12:35:41,325 - INFO - Test set size: 10000
+2025-05-31 12:35:41,325 - INFO - Created data loaders
+2025-05-31 12:35:41,325 - INFO - Initializing model and training components
+2025-05-31 12:35:41,326 - INFO - Initializing DeepCAMCNN with in_channels=1, num_classes=10, hash_length=256
+2025-05-31 12:35:41,328 - INFO - Initializing LearnedProjKernel with in_features=3136, out_features=10, hash_length=256
+2025-05-31 12:35:41,343 - INFO - Initialized LearnedProjKernel for LSH
+2025-05-31 12:35:41,344 - INFO - Starting model training
+2025-05-31 12:35:41,344 - INFO - Starting training for 10 epochs on cpu
+2025-05-31 12:35:41,344 - INFO - Epoch 1/10 started
+2025-05-31 12:37:27,171 - INFO - Starting DeepCAM CNN training script
+2025-05-31 12:37:27,172 - INFO - Using device: cpu
+2025-05-31 12:37:27,172 - INFO - Defined data transformations
+2025-05-31 12:37:27,172 - INFO - Loading MNIST dataset
+2025-05-31 12:37:27,214 - INFO - Training set size: 60000
+2025-05-31 12:37:27,214 - INFO - Test set size: 10000
+2025-05-31 12:37:27,214 - INFO - Created data loaders
+2025-05-31 12:37:27,214 - INFO - Initializing model and training components
+2025-05-31 12:37:27,214 - INFO - Initializing DeepCAMCNN with in_channels=1, num_classes=10, hash_length=256
+2025-05-31 12:37:27,215 - INFO - Initializing LearnedProjKernel with in_features=3136, out_features=10, hash_length=256
+2025-05-31 12:37:27,225 - INFO - Initialized LearnedProjKernel for LSH
+2025-05-31 12:37:27,226 - INFO - Starting model training
+2025-05-31 12:37:27,226 - INFO - Starting training for 10 epochs on cpu
+2025-05-31 12:37:27,226 - INFO - Epoch 1/10 started
+2025-05-31 12:37:28,304 - INFO - Epoch [1/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:29,342 - INFO - Epoch [1/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:30,384 - INFO - Epoch [1/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:31,425 - INFO - Epoch [1/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:32,464 - INFO - Epoch [1/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:33,501 - INFO - Epoch [1/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:34,540 - INFO - Epoch [1/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:35,585 - INFO - Epoch [1/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:36,631 - INFO - Epoch [1/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:37,029 - INFO - Epoch 1 completed in 9.80 seconds
+2025-05-31 12:37:37,029 - INFO - Epoch 2/10 started
+2025-05-31 12:37:38,069 - INFO - Epoch [2/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:39,117 - INFO - Epoch [2/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:40,161 - INFO - Epoch [2/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:41,208 - INFO - Epoch [2/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:42,253 - INFO - Epoch [2/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:43,303 - INFO - Epoch [2/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:44,346 - INFO - Epoch [2/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:45,394 - INFO - Epoch [2/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:46,436 - INFO - Epoch [2/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:46,831 - INFO - Epoch 2 completed in 9.80 seconds
+2025-05-31 12:37:46,832 - INFO - Epoch 3/10 started
+2025-05-31 12:37:47,873 - INFO - Epoch [3/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:48,916 - INFO - Epoch [3/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:49,961 - INFO - Epoch [3/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:51,008 - INFO - Epoch [3/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:52,050 - INFO - Epoch [3/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:53,132 - INFO - Epoch [3/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:54,345 - INFO - Epoch [3/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:55,472 - INFO - Epoch [3/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:56,523 - INFO - Epoch [3/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:56,919 - INFO - Epoch 3 completed in 10.09 seconds
+2025-05-31 12:37:56,919 - INFO - Epoch 4/10 started
+2025-05-31 12:37:57,970 - INFO - Epoch [4/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:37:59,015 - INFO - Epoch [4/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:00,072 - INFO - Epoch [4/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:01,128 - INFO - Epoch [4/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:02,180 - INFO - Epoch [4/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:03,239 - INFO - Epoch [4/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:04,287 - INFO - Epoch [4/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:05,347 - INFO - Epoch [4/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:06,399 - INFO - Epoch [4/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:06,800 - INFO - Epoch 4 completed in 9.88 seconds
+2025-05-31 12:38:06,800 - INFO - Epoch 5/10 started
+2025-05-31 12:38:07,853 - INFO - Epoch [5/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:08,904 - INFO - Epoch [5/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:09,956 - INFO - Epoch [5/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:11,010 - INFO - Epoch [5/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:12,065 - INFO - Epoch [5/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:13,117 - INFO - Epoch [5/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:14,165 - INFO - Epoch [5/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:15,220 - INFO - Epoch [5/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:16,273 - INFO - Epoch [5/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:16,676 - INFO - Epoch 5 completed in 9.88 seconds
+2025-05-31 12:38:16,676 - INFO - Epoch 6/10 started
+2025-05-31 12:38:17,732 - INFO - Epoch [6/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:18,783 - INFO - Epoch [6/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:19,834 - INFO - Epoch [6/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:20,883 - INFO - Epoch [6/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:21,931 - INFO - Epoch [6/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:22,985 - INFO - Epoch [6/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:24,048 - INFO - Epoch [6/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:25,120 - INFO - Epoch [6/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:26,365 - INFO - Epoch [6/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:26,767 - INFO - Epoch 6 completed in 10.09 seconds
+2025-05-31 12:38:26,767 - INFO - Epoch 7/10 started
+2025-05-31 12:38:27,904 - INFO - Epoch [7/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:28,955 - INFO - Epoch [7/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:30,004 - INFO - Epoch [7/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:31,060 - INFO - Epoch [7/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:32,110 - INFO - Epoch [7/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:33,160 - INFO - Epoch [7/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:34,211 - INFO - Epoch [7/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:35,269 - INFO - Epoch [7/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:36,319 - INFO - Epoch [7/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:36,715 - INFO - Epoch 7 completed in 9.95 seconds
+2025-05-31 12:38:36,716 - INFO - Epoch 8/10 started
+2025-05-31 12:38:37,769 - INFO - Epoch [8/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:38,832 - INFO - Epoch [8/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:39,886 - INFO - Epoch [8/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:40,949 - INFO - Epoch [8/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:41,999 - INFO - Epoch [8/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:43,057 - INFO - Epoch [8/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:44,149 - INFO - Epoch [8/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:45,203 - INFO - Epoch [8/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:46,261 - INFO - Epoch [8/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:46,660 - INFO - Epoch 8 completed in 9.94 seconds
+2025-05-31 12:38:46,660 - INFO - Epoch 9/10 started
+2025-05-31 12:38:47,715 - INFO - Epoch [9/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:48,775 - INFO - Epoch [9/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:49,829 - INFO - Epoch [9/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:50,888 - INFO - Epoch [9/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:51,945 - INFO - Epoch [9/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:52,997 - INFO - Epoch [9/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:54,055 - INFO - Epoch [9/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:55,109 - INFO - Epoch [9/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:56,189 - INFO - Epoch [9/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:56,592 - INFO - Epoch 9 completed in 9.93 seconds
+2025-05-31 12:38:56,592 - INFO - Epoch 10/10 started
+2025-05-31 12:38:57,807 - INFO - Epoch [10/10], Step [100/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:38:58,899 - INFO - Epoch [10/10], Step [200/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:00,031 - INFO - Epoch [10/10], Step [300/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:01,088 - INFO - Epoch [10/10], Step [400/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:02,139 - INFO - Epoch [10/10], Step [500/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:03,196 - INFO - Epoch [10/10], Step [600/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:04,248 - INFO - Epoch [10/10], Step [700/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:05,312 - INFO - Epoch [10/10], Step [800/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:06,369 - INFO - Epoch [10/10], Step [900/938], Loss: 2.3026, Batch Time: 0.01s
+2025-05-31 12:39:06,768 - INFO - Epoch 10 completed in 10.18 seconds
+2025-05-31 12:39:06,768 - INFO - Starting model evaluation
+2025-05-31 12:39:06,768 - INFO - Starting model evaluation
+2025-05-31 12:39:08,358 - INFO - Evaluation completed in 1.59 seconds
+2025-05-31 12:39:08,358 - INFO - Test Accuracy: 9.80%
+2025-05-31 12:39:08,358 - INFO - Training script completed
