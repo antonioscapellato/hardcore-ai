@@ -13,6 +13,7 @@ OUTPUT_DIR = Path(__file__).parent / "submission_checkpoints"
 
 def validate_model(device, model, test_loader):
     # validation
+    model.to(device)
     model.eval()
     correct, total = 0, 0
     with torch.no_grad():
