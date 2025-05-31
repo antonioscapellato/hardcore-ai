@@ -21,16 +21,19 @@ class LearnedProjKernel(_HashKernel):
         return self._learnable_projection_matrix
 
     class SignSTE(torch.autograd.Function):
-        """Straight-Through Estimator for the sign function to enable gradient flow."""
         @staticmethod
-        def forward(ctx, input):
-            # Forward pass: apply sign function to get binary codes {-1, 1}
-            return torch.sign(input)
+        def forward(ctx, x, k: float = 20.0):
+            ctx.save_for_backward(x)   # we’ll need x in backward
+            ctx.k = k
+            return x.sign()            # hard ±1
 
         @staticmethod
-        def backward(ctx, grad_output):
-            # Backward pass: pass gradients through as if sign were the identity function
-            return grad_output
+        def backward(ctx, grad_out):
+            (x,) = ctx.saved_tensors
+            k = ctx.k
+            # sech²(kx) = 1 − tanh²(kx)
+            surrogate_grad = k * (1.0 - torch.tanh(k * x).pow(2))
+            return grad_out * surrogate_grad, None   # None → no grad for k
 
     def _compute_codes_internal(self, unit_vectors: torch.Tensor) -> torch.Tensor:
         # Compute binary hash codes using learnable projection matrix

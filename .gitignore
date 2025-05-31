@@ -62,3 +62,7 @@ Thumbs.db
 # local .pth and logs
 submission_checkpoints/
 
+*pycache*
+src/data/
+*.egg-info
+*submission_checkpoints*

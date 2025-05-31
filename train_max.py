@@ -111,8 +111,8 @@ def main():
         original_model.to(device)
     
         # Patch the model with hash kernels
-        updated_conf = update_hash_lengths(model, resnet20_full_patch_config)
-        hashed_model = bb.patch_model(model, config=updated_conf)
+        # updated_conf = update_hash_lengths(model, resnet20_full_patch_config)
+        hashed_model = bb.patch_model(model, config=resnet20_full_patch_config)
         hashed_model.to(device)
     
         # Initialize loss and optimizer
