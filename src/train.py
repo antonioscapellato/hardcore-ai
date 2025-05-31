@@ -31,14 +31,13 @@ def train_model(device, model, train_loader, test_loader):
     optimizer = torch.optim.SGD(model.parameters(), lr=conf.lr, momentum=0.9, weight_decay=5e-4, nesterov=True)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=conf.epochs, eta_min=0) 
     model.to(device)
-
+    model.train()
     
     # Create a progress bar for epochs
     epoch_pbar = tqdm(range(conf.epochs), desc="Training Progress", position=0)
     
     for epoch in epoch_pbar:
         # Reset train loss for each epoch
-        model.train()
         train_loss = 0
         batch_count = 0
         
@@ -52,6 +51,10 @@ def train_model(device, model, train_loader, test_loader):
             
             outputs = model(images)
             
+            _, predicted = torch.max(outputs.data, 1)
+            correct_batch = (predicted == labels).sum().item()
+            batch_acc = 100.0 * correct_batch / labels.size(0)
+            
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -60,7 +63,8 @@ def train_model(device, model, train_loader, test_loader):
             current_loss = loss.item()
             train_loss += current_loss
             batch_count += 1
-            batch_pbar.set_postfix({'loss': f"{current_loss:.4f}"})
+ 
+            batch_pbar.set_postfix({'loss': f"{current_loss:.4f}", 'acc': f"{batch_acc:.2f}%"})
             
         # Close the batch progress bar
         batch_pbar.close()
@@ -68,13 +72,13 @@ def train_model(device, model, train_loader, test_loader):
         # Calculate average loss for the epoch
         avg_train_loss = train_loss / batch_count if batch_count > 0 else 0
         
-        # Validate model and update learning rate
-        accuracy = validate_model(device, model, test_loader)
+        # update learning rate
+
         scheduler.step()
         
         # Update epoch progress bar with metrics
-        epoch_pbar.set_postfix({'loss': f"{avg_train_loss:.4f}", 'accuracy': f"{accuracy:.2f}%"})
-        print(f"Epoch [{epoch+1}/{conf.epochs}], Train Loss: {avg_train_loss:.4f}, Accuracy: {accuracy:.2f}%")
+        # epoch_pbar.set_postfix({'loss': f"{avg_train_loss:.4f}", 'accuracy': f"{accuracy:.2f}%"})
+        print(f"Epoch [{epoch+1}/{conf.epochs}], Train Loss: {avg_train_loss:.4f}")
     
     return model
         
@@ -86,7 +90,7 @@ def main():
     cifar_10_train_loader, cifar_10_test_loader = get_loaders(
         dataset_name="CIFAR10",
         data_dir=Path(__file__).parent / "data",
-        batch_size=conf.batch_size,
+        batch_size=128,
         mean=CIFAR10_MEAN,
         std=CIFAR10_STD,
         num_workers=0,
@@ -96,7 +100,7 @@ def main():
     cifar_100_train_loader, cifar_100_test_loader = get_loaders(
         dataset_name="CIFAR100",
         data_dir=Path(__file__).parent / "data",
-        batch_size=conf.batch_size,     
+        batch_size=128,     
         mean=CIFAR100_MEAN,
         std=CIFAR100_STD,
         num_workers=0,
@@ -115,9 +119,11 @@ def main():
         accuracy_base = validate_model(device, model, test_loader)
         print(f"Base model accuracy: {accuracy_base:.2f}%")
         
-        hashed_model = bb.patch_model(model, config=resnet20_full_patch_config)
+        hashed_model = bb.patch_model(model, config=resnet20_full_patch_config_learned)
         trained_model = train_model(device, hashed_model, train_loader, test_loader)
         # Store model
+        accuracy = validate_model(device, trained_model, test_loader)
+        print(f"Trained model accuracy: {accuracy:.2f}%")
 
         torch.save(trained_model.state_dict(), OUTPUT_DIR / f"{model_name}.pth")
         print(f"Saved {model_name} checkpoint")
