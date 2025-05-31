@@ -3,7 +3,7 @@ from typing import Set
 
 import torch.nn as nn
 
-from src.bitbybit.kernel import _HashKernel
+from bitbybit.kernel import _HashKernel
 
 
 def _score(

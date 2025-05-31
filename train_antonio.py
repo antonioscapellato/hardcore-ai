@@ -4,10 +4,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as lr_scheduler
 
-from src.bitbybit.utils.models import get_backbone
-from src.bitbybit.utils.data import get_loaders, CIFAR10_MEAN, CIFAR10_STD, CIFAR100_MEAN, CIFAR100_STD
-import src.bitbybit as bb
-from src.bitbybit.config.resnet20 import resnet20_full_patch_config
+from bitbybit.utils.models import get_backbone
+from bitbybit.utils.data import get_loaders, CIFAR10_MEAN, CIFAR10_STD, CIFAR100_MEAN, CIFAR100_STD
+import bitbybit as bb
+from bitbybit.config.resnet20 import resnet20_full_patch_config
 
 OUTPUT_DIR = Path(__file__).parent / "submission_checkpoints"
 
