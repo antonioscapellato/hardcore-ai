@@ -49,7 +49,10 @@ class LearnedProjKernel(_HashKernel):
     ) -> torch.Tensor:
         K = self.hash_length
         dot = codes_1 @ codes_2_matmuled
-        return (K - dot) / 2 # Hamming distance, est cos(theta)
+        HD = (K - dot) / 2.0 # Hamming distance, est cos(theta)
+        theta_approx = (math.pi / K) * HD  # Angle approximation (DeepCAM Eq. 3)
+        cos_est = torch.cos(theta_approx)  # Cosine similarity (DeepCAM Eq. 4)
+        return cos_est
 
     def extra_repr(self) -> str:
         return (
