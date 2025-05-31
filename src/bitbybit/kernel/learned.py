@@ -4,6 +4,13 @@ import math
 
 from ._base import _HashKernel
 
+class SignSTE(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x) -> torch.Tensor:
+        return x.sign()
+    @staticmethod
+    def backward(ctx, grad_outputs): # type: ignore
+        return grad_outputs # maybe apply sigmoid/tanh or other surrogate derivative here; try add noise?
 
 class LearnedProjKernel(_HashKernel):
 
@@ -21,12 +28,22 @@ class LearnedProjKernel(_HashKernel):
         return self._learnable_projection_matrix
 
     def _compute_codes_internal(self, unit_vectors: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError("Expected to be implemented by Challenge Participants")
+        """
+        Computes binary hash codes for unit input vectors using self.projection_matrix.
+        Args:
+            vectors (torch.Tensor): Input tensor of shape (..., features_dim).
+                                            features_dim must match self.projection_matrix's second dim.
+        Returns:
+            torch.Tensor: Binary codes {-1, 1} of shape (..., self.hash_length).
+        """
+        x_proj = unit_vectors @ self.projection_matrix.T # (B, N_in) @ (N_in, K) -> (B, K)
+        return SignSTE.apply(x_proj) # type: ignore
 
     def _estimate_cosine_internal(
         self, codes_1: torch.Tensor, codes_2_matmuled: torch.Tensor
     ) -> torch.Tensor:
-        raise NotImplementedError("Expected to be implemented by Challenge Participants")
+        dot = codes_1 @ codes_2_matmuled
+        return (codes_1.shape[-1] - dot) / 2 # Hamming distance, est cos(theta)
 
     def extra_repr(self) -> str:
         return (
