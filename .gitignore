@@ -58,3 +58,7 @@ Thumbs.db
 
 # Miscellaneous
 *.so
+
+# local .pth and logs
+submission_checkpoints/
+
