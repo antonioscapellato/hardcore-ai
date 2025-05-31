@@ -13,6 +13,96 @@ Deep neural networks (DNNs), particularly large language models (LLMs), are grow
 
 **Analog in-memory computing (AIMC)** addresses this by performing multiply-accumulate (MAC) operations directly within memory arrays, significantly reducing data movement and improving energy efficiency. However, AIMC requires quantization of analog dot-products, typically using power-hungry analog-to-digital converters (ADCs). This project removes high-resolution ADCs from the critical path by using **1-bit ADCs** and reconstructing outputs via **Hamming distance calculations** against pre-encoded weight patterns, a technique based on LSH.
 
+**Locality Sensitive Hashing (LSH)** is a technique used to perform efficient **approximate nearest neighbor** searches in **high-dimensional spaces**. The key idea is to **hash input items in such a way that similar items are more likely to be hashed to the same "bucket"**, enabling fast similarity searches.
+
+### 📌 **Key Concepts of LSH:**
+
+1. **Locality Sensitivity:**
+
+   * Unlike traditional hash functions (which try to uniformly distribute data), LSH uses hash functions that **preserve similarity**.
+   * If two vectors $x$ and $y$ are **similar** (e.g., have a small angle between them), LSH ensures:
+
+     $$
+     P[\text{hash}(x) = \text{hash}(y)] > P[\text{hash}(x) \ne \text{hash}(y)]
+     $$
+
+2. **Hash Function Families:**
+
+   * LSH uses different families of hash functions for different similarity measures:
+
+     * **Cosine similarity** → Random hyperplane LSH
+     * **Euclidean distance** → p-stable distributions
+     * **Jaccard similarity** → MinHash
+
+3. **Random Projection (for Cosine LSH):**
+
+   * Given a random vector $r$, the hash of a vector $x$ is:
+
+     $$
+     h_r(x) = \text{sign}(r \cdot x)
+     $$
+   * This gives a **binary code** that encodes the relative position of $x$ with respect to the hyperplane defined by $r$.
+
+
+### 🔧 "Graceful degradation in accuracy":
+
+When you replace precise operations (like high-precision matrix multiplications) with **approximate ones** (like LSH-based similarity measures), you naturally lose some precision. But if your method is well-designed:
+
+* The **drop in model accuracy is small**, especially for early stages of approximation.
+* You can **tune parameters** (like the number of hash bits or quantization levels) to control the **trade-off between energy savings and accuracy**.
+* You maintain **acceptable performance for many tasks**, especially where exact values are not critical.
+
+### 🧠 Example
+
+Suppose you replace a standard dot product in a neural network with an LSH-based approximation:
+
+| LSH Bit-width | Energy Usage | Model Accuracy |
+| ------------- | ------------ | -------------- |
+| 32 bits       | High         | 99%            |
+| 16 bits       | Medium       | 97%            |
+| 8 bits        | Low          | 92%            |
+| 4 bits        | Very Low     | 80%            |
+
+Here, as you decrease the bit-width (and gain energy efficiency), the **accuracy degrades smoothly** rather than falling off a cliff.
+
+
+---
+
+### 🧠 **Why is LSH Relevant to Energy-Efficient AI?**
+
+In the context of AI accelerators:
+
+* **Standard MAC operations** (Multiply-Accumulate) are computationally and energy expensive.
+* **LSH-based geometric approximations** can **replace dot products** with **Hamming distance comparisons or lookup-based methods**.
+* This allows:
+
+  * Lower bit-width operations (e.g., binary or ternary representations)
+  * Potentially **massive energy savings** with **graceful degradation in accuracy**
+
+---
+
+### 🔍 Example: Approximate Dot Product Using LSH
+
+1. Convert vectors $x$ and $w$ to hash codes $h(x)$, $h(w)$
+2. Compute **similarity** as:
+
+   $$
+   \text{Sim}(x, w) \approx \text{Hamming similarity}(h(x), h(w))
+   $$
+3. Use this as a proxy for the dot product $x \cdot w$
+
+---
+
+### 🧪 Summary
+
+| Feature             | Traditional Dot Product | LSH-based Approximation    |
+| ------------------- | ----------------------- | -------------------------- |
+| Operation           | Multiply + Accumulate   | Binary comparison          |
+| Speed               | Moderate                | Very fast (bit operations) |
+| Energy Efficiency   | Low                     | High                       |
+| Approximation Error | None                    | Controlled, data-dependent |
+| Use Case            | Accurate computation    | Fast similarity estimation |
+
 ---
 
 ## Objectives
