@@ -4,6 +4,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 def train_model(model: torch.nn.Module,
                 train_loader: torch.utils.data.DataLoader,
+                test_loader: torch.utils.data.DataLoader,
                 criterion: torch.nn.Module,
                 optimizer: torch.optim.Optimizer,
                 num_epochs: int,
@@ -12,7 +13,7 @@ def train_model(model: torch.nn.Module,
                 log_interval: int = 10) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
-    to both console and TensorBoard.
+    to both console and TensorBoard. Also evaluates on test set after each epoch.
     """
     model.train()
     global_step = 0
@@ -62,6 +63,9 @@ def train_model(model: torch.nn.Module,
 
         # Log the average training loss per epoch
         writer.add_scalar("Train/Epoch_Avg_Loss", avg_epoch_loss, epoch + 1)
+
+        # Evaluate on test set after each epoch
+        evaluate_model(model, test_loader, criterion, device, writer, epoch + 1)
 
 def evaluate_model(model: torch.nn.Module,
                    test_loader: torch.utils.data.DataLoader,

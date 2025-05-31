@@ -3,6 +3,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 from pathlib import Path
 import torch
+import copy
 from src.bitbybit.utils.models import get_backbone
 from src.bitbybit.utils.data import (
     get_loaders,
@@ -12,9 +13,13 @@ from src.bitbybit.utils.data import (
     CIFAR100_STD,
 )
 from src import bitbybit as bb
+from src.bitbybit.config.resnet20 import resnet20_full_patch_config
 
 from src.train.logger import get_writer
 from src.train.trainer import train_model, evaluate_model
+
+# Import evaluation utilities
+from src.test.evaluation import evaluate_accuracy, compute_score
 
 def main():
     # Determine device
@@ -61,25 +66,26 @@ def main():
         print(f"Starting training for {model_name} on device {device}")
 
         # Patch the model with hash kernels
-        hashed_model = bb.patch_model(model)
+        hashed_model = bb.patch_model(model, config=resnet20_full_patch_config)
         hashed_model.to(device)
-
+    
         # Initialize loss and optimizer
         criterion = torch.nn.CrossEntropyLoss()
         optimizer = torch.optim.Adam(hashed_model.parameters(), lr=learning_rate)
-
+    
         # Initialize TensorBoard writer
         writer = get_writer(str(OUTPUT_DIR), model_name)
-
-        # Train and evaluate
+    
+        # Train and evaluate (now including test_loader)
         train_model(
-            model=hashed_model,
-            train_loader=train_loader,
-            criterion=criterion,
-            optimizer=optimizer,
-            num_epochs=num_epochs,
-            device=device,
-            writer=writer,
+            hashed_model,
+            train_loader,
+            test_loader,
+            criterion,
+            optimizer,
+            num_epochs,
+            device,
+            writer,
             log_interval=50,  # Log every 50 batches
         )
 
@@ -92,6 +98,18 @@ def main():
             writer=writer,
             epoch=num_epochs,
         )
+
+        # Compute hashed_model accuracy (redundant with evaluate_model's logged accuracy),
+        # but use evaluate_accuracy for consistency in scoring
+        hashed_accuracy = evaluate_accuracy(hashed_model, test_loader, device)
+        print(f"[{model_name}] Hashed Model Accuracy (post-hashing/training): {hashed_accuracy:.2f}%")
+
+        # Compute submission score, using orig_accuracy computed earlier
+        _, _, submission_score = compute_score(original_model, hashed_model, test_loader, device)
+        print(f"[{model_name}] Submission Score: {submission_score:.4f}")
+        # Log hashed_accuracy and submission_score to TensorBoard at final epoch
+        writer.add_scalar("Evaluation/Hashed_Accuracy", hashed_accuracy, num_epochs)
+        writer.add_scalar("Score/Submission_Score", submission_score, num_epochs)
 
         # Save the hashed model checkpoint
         checkpoint_path = OUTPUT_DIR / f"{model_name}.pth"
