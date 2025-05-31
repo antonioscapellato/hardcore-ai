@@ -1,211 +1,249 @@
-"""
-Training script for ResNet-20 on CIFAR-10 and CIFAR-100 with checkpoint saving.
-"""
-
+from pathlib import Path
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torchvision
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data import Subset, DataLoader
+import numpy as np
+from sklearn.model_selection import train_test_split
+from tqdm import tqdm
 import logging
-import time
-import sys
-import os
-from pathlib import Path
+
+from bitbybit.utils.models import get_backbone
+from bitbybit.utils.data import get_loaders, CIFAR10_MEAN, CIFAR10_STD, CIFAR100_MEAN, CIFAR100_STD
+import bitbybit as bb
+from bitbybit.config.resnet20 import resnet20_full_patch_config
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('training.log')
-    ]
-)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Define ResNet-20 architecture
-class BasicBlock(nn.Module):
-    expansion = 1
+OUTPUT_DIR = Path(__file__).parent / "submission_checkpoints"
+TENSORBOARD_DIR = Path(__file__).parent / "runs"
 
-    def __init__(self, in_planes, planes, stride=1):
-        super(BasicBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
-
-        self.shortcut = nn.Sequential()
-        if stride != 1 or in_planes != self.expansion * planes:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_planes, self.expansion * planes, kernel_size=1, stride=stride, bias=False),
-                nn.BatchNorm2d(self.expansion * planes)
-            )
-
-    def forward(self, x):
-        out = torch.relu(self.bn1(self.conv1(x)))
-        out = self.bn2(self.conv2(out))
-        out += self.shortcut(x)
-        out = torch.relu(out)
-        return out
-
-class ResNet(nn.Module):
-    def __init__(self, block, num_blocks, num_classes=10):
-        super(ResNet, self).__init__()
-        self.in_planes = 16
-
-        self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.layer1 = self._make_layer(block, 16, num_blocks[0], stride=1)
-        self.layer2 = self._make_layer(block, 32, num_blocks[1], stride=2)
-        self.layer3 = self._make_layer(block, 64, num_blocks[2], stride=2)
-        self.linear = nn.Linear(64 * block.expansion, num_classes)
-
-    def _make_layer(self, block, planes, num_blocks, stride):
-        strides = [stride] + [1] * (num_blocks - 1)
-        layers = []
-        for stride in strides:
-            layers.append(block(self.in_planes, planes, stride))
-            self.in_planes = planes * block.expansion
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        out = torch.relu(self.bn1(self.conv1(x)))
-        out = self.layer1(out)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = torch.nn.functional.avg_pool2d(out, 8)
-        out = out.view(out.size(0), -1)
-        out = self.linear(out)
-        return out
-
-def ResNet20(num_classes=10):
-    return ResNet(BasicBlock, [3, 3, 3], num_classes)
-
-def train_model(model, train_loader, criterion, optimizer, device, num_epochs=5):
-    logger.info(f"Starting training for {num_epochs} epochs on {device}")
-    model.train()
-    for epoch in range(num_epochs):
-        epoch_start_time = time.time()
-        running_loss = 0.0
-        total_batches = len(train_loader)
-        
-        for i, (images, labels) in enumerate(train_loader):
-            batch_start_time = time.time()
-            images, labels = images.to(device), labels.to(device)
-            
-            optimizer.zero_grad()
-            outputs = model(images)
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
-            
-            running_loss += loss.item()
-            if (i + 1) % 100 == 0:
-                avg_loss = running_loss / 100
-                batch_time = time.time() - batch_start_time
-                logger.info(f"Epoch [{epoch+1}/{num_epochs}], "
-                          f"Step [{i+1}/{total_batches}], "
-                          f"Loss: {avg_loss:.4f}, "
-                          f"Batch Time: {batch_time:.2f}s")
-                running_loss = 0.0
-        
-        epoch_time = time.time() - epoch_start_time
-        logger.info(f"Epoch {epoch+1} completed in {epoch_time:.2f} seconds")
+def get_split_loaders(dataset_name, data_dir, batch_size, mean, std, num_workers, pin_memory):
+    """Create train, validation, and test loaders with a validation split."""
+    train_loader, test_loader = get_loaders(
+        dataset_name=dataset_name,
+        data_dir=data_dir,
+        batch_size=batch_size,
+        mean=mean,
+        std=std,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+    )
     
-    return model
+    # Create validation split from training data
+    train_dataset = train_loader.dataset
+    indices = list(range(len(train_dataset)))
+    train_indices, val_indices = train_test_split(
+        indices, test_size=0.1, random_state=42, stratify=train_dataset.targets
+    )
+    
+    train_subset = Subset(train_dataset, train_indices)
+    val_subset = Subset(train_dataset, val_indices)
+    
+    train_loader = DataLoader(
+        train_subset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=pin_memory
+    )
+    val_loader = DataLoader(
+        val_subset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=pin_memory
+    )
+    
+    return train_loader, val_loader, test_loader
 
-def evaluate_model(model, test_loader, device):
-    logger.info("Starting model evaluation")
-    model.eval()
+def compute_topk_accuracy(outputs, targets, k=5):
+    """Compute top-k accuracy."""
+    with torch.no_grad():
+        _, pred = outputs.topk(k, dim=1, largest=True, sorted=True)
+        pred = pred.t()
+        correct = pred.eq(targets.view(1, -1).expand_as(pred))
+        correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
+        return correct_k.mul_(100.0 / targets.size(0)).item()
+
+def train_epoch(model, train_loader, criterion, optimizer, device, epoch, writer, model_name, kernel_type):
+    model.train()
+    total_loss = 0
     correct = 0
     total = 0
-    eval_start_time = time.time()
+    top5_correct = 0
+    
+    pbar = tqdm(train_loader, desc=f"Training {model_name} ({kernel_type}) Epoch {epoch+1}")
+    for inputs, targets in pbar:
+        inputs, targets = inputs.to(device), targets.to(device)
+        
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, targets)
+        
+        loss.backward()
+        optimizer.step()
+        
+        total_loss += loss.item()
+        _, predicted = outputs.max(1)
+        total += targets.size(0)
+        correct += predicted.eq(targets).sum().item()
+        top5_correct += compute_topk_accuracy(outputs, targets, k=5)
+        
+        pbar.set_postfix({
+            'loss': total_loss / (pbar.n + 1),
+            'top1_acc': 100. * correct / total,
+            'top5_acc': 100. * top5_correct / (pbar.n + 1)
+        })
+    
+    avg_loss = total_loss / len(train_loader)
+    top1_acc = 100. * correct / total
+    top5_acc = 100. * top5_correct / len(train_loader)
+    
+    writer.add_scalar(f"{model_name}/{kernel_type}/Train_Loss", avg_loss, epoch)
+    writer.add_scalar(f"{model_name}/{kernel_type}/Train_Top1_Acc", top1_acc, epoch)
+    writer.add_scalar(f"{model_name}/{kernel_type}/Train_Top5_Acc", top5_acc, epoch)
+    
+    return avg_loss, top1_acc, top5_acc
+
+def evaluate(model, loader, criterion, device, epoch, writer, model_name, kernel_type, split="Val"):
+    model.eval()
+    total_loss = 0
+    correct = 0
+    total = 0
+    top5_correct = 0
     
     with torch.no_grad():
-        for i, (images, labels) in enumerate(test_loader):
-            images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
+        for inputs, targets in tqdm(loader, desc=f"{split} {model_name} ({kernel_type})"):
+            inputs, targets = inputs.to(device), targets.to(device)
+            outputs = model(inputs)
+            loss = criterion(outputs, targets)
             
-            if (i + 1) % 100 == 0:
-                logger.debug(f"Processed {i+1} test batches")
+            total_loss += loss.item()
+            _, predicted = outputs.max(1)
+            total += targets.size(0)
+            correct += predicted.eq(targets).sum().item()
+            top5_correct += compute_topk_accuracy(outputs, targets, k=5)
     
-    accuracy = 100 * correct / total
-    eval_time = time.time() - eval_start_time
-    logger.info(f"Evaluation completed in {eval_time:.2f} seconds")
-    logger.info(f"Test Accuracy: {accuracy:.2f}%")
-    return accuracy
-
-def save_checkpoint(model, filename, checkpoint_dir='submission_checkpoints'):
-    os.makedirs(checkpoint_dir, exist_ok=True)
-    filepath = os.path.join(checkpoint_dir, filename)
-    torch.save(model.state_dict(), filepath)
-    logger.info(f"Saved checkpoint: {filepath}")
+    avg_loss = total_loss / len(loader)
+    top1_acc = 100. * correct / total
+    top5_acc = 100. * top5_correct / len(loader)
+    
+    writer.add_scalar(f"{model_name}/{kernel_type}/{split}_Loss", avg_loss, epoch)
+    writer.add_scalar(f"{model_name}/{kernel_type}/{split}_Top1_Acc", top1_acc, epoch)
+    writer.add_scalar(f"{model_name}/{kernel_type}/{split}_Top5_Acc", top5_acc, epoch)
+    
+    return avg_loss, top1_acc, top5_acc
 
 def main():
-    logger.info("Starting ResNet-20 training script for CIFAR-10 and CIFAR-100")
-    
-    # Set up device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    TENSORBOARD_DIR.mkdir(parents=True, exist_ok=True)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using device: {device}")
-    
-    # Define data transformations for CIFAR
-    transform = transforms.Compose([
-        transforms.RandomCrop(32, padding=4),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-    ])
-    logger.info("Defined data transformations")
-    
-    # Train and evaluate on CIFAR-10
-    logger.info("Loading CIFAR-10 dataset")
-    train_dataset_cifar10 = torchvision.datasets.CIFAR10(
-        root='./data', train=True, transform=transform, download=True
+
+    # Training hyperparameters
+    num_epochs = 5
+    learning_rate = 0.1
+    weight_decay = 5e-4
+    hash_length = 4096
+    patience = 10  # Early stopping patience
+    warmup_epochs = 5  # Learning rate warmup epochs
+
+    cifar_10_train_loader, cifar_10_val_loader, cifar_10_test_loader = get_split_loaders(
+        dataset_name="CIFAR10",
+        data_dir=Path(__file__).parent / "data",
+        batch_size=128,
+        mean=CIFAR10_MEAN,
+        std=CIFAR10_STD,
+        num_workers=2,
+        pin_memory=True,
     )
-    test_dataset_cifar10 = torchvision.datasets.CIFAR10(
-        root='./data', train=False, transform=transform
+
+    cifar_100_train_loader, cifar_100_val_loader, cifar_100_test_loader = get_split_loaders(
+        dataset_name="CIFAR100",
+        data_dir=Path(__file__).parent / "data",
+        batch_size=128,
+        mean=CIFAR100_MEAN,
+        std=CIFAR100_STD,
+        num_workers=2,
+        pin_memory=True,
     )
-    train_loader_cifar10 = DataLoader(dataset=train_dataset_cifar10, batch_size=128, shuffle=True)
-    test_loader_cifar10 = DataLoader(dataset=test_dataset_cifar10, batch_size=128, shuffle=False)
-    
-    logger.info("Initializing ResNet-20 for CIFAR-10")
-    model_cifar10 = ResNet20(num_classes=10).to(device)
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model_cifar10.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
-    
-    logger.info("Training on CIFAR-10")
-    model_cifar10 = train_model(model_cifar10, train_loader_cifar10, criterion, optimizer, device, num_epochs=5)
-    save_checkpoint(model_cifar10, 'cifar10_resnet20.pth')
-    evaluate_model(model_cifar10, test_loader_cifar10, device)
-    
-    # Train and evaluate on CIFAR-100
-    logger.info("Loading CIFAR-100 dataset")
-    train_dataset_cifar100 = torchvision.datasets.CIFAR100(
-        root='./data', train=True, transform=transform, download=True
-    )
-    test_dataset_cifar100 = torchvision.datasets.CIFAR100(
-        root='./data', train=False, transform=transform
-    )
-    train_loader_cifar100 = DataLoader(dataset=train_dataset_cifar100, batch_size=128, shuffle=True)
-    test_loader_cifar100 = DataLoader(dataset=test_dataset_cifar100, batch_size=128, shuffle=False)
-    
-    logger.info("Initializing ResNet-20 for CIFAR-100")
-    model_cifar100 = ResNet20(num_classes=100).to(device)
-    optimizer = optim.SGD(model_cifar100.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=100)
-    
-    logger.info("Training on CIFAR-100")
-    model_cifar100 = train_model(model_cifar100, train_loader_cifar100, criterion, optimizer, device, num_epochs=5)
-    save_checkpoint(model_cifar100, 'cifar100_resnet20.pth')
-    evaluate_model(model_cifar100, test_loader_cifar100, device)
-    
-    logger.info("Training script completed")
+
+    models = [
+        ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_val_loader, cifar_10_test_loader, 10),
+        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_val_loader, cifar_100_test_loader, 100),
+    ]
+
+    for model_name, model, train_loader, val_loader, test_loader, num_classes in models:
+        logger.info(f"\nTraining {model_name}")
+        model = model.to(device)
+        
+        # Create configurations for both kernels
+        random_config = resnet20_full_patch_config.copy()
+        random_config["hash_kernel_type"] = "random_projection"
+        random_config["hash_length"] = hash_length
+        
+        learned_config = resnet20_full_patch_config.copy()
+        learned_config["hash_kernel_type"] = "learned_projection"
+        learned_config["hash_length"] = hash_length
+        
+        for kernel_type, config in [("RandomProjKernel", random_config), ("LearnedProjKernel", learned_config)]:
+            logger.info(f"\nTraining with {kernel_type}")
+            writer = SummaryWriter(TENSORBOARD_DIR / f"{model_name}_{kernel_type.lower()}")
+            
+            # Initialize model
+            patched_model = bb.patch_model(model, config)
+            patched_model = patched_model.to(device)
+            
+            criterion = nn.CrossEntropyLoss()
+            optimizer = optim.SGD(patched_model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=weight_decay)
+            scheduler = CosineAnnealingLR(optimizer, T_max=num_epochs - warmup_epochs)
+            
+            best_val_acc = 0
+            epochs_no_improve = 0
+            best_checkpoint_path = OUTPUT_DIR / f"{model_name}_{kernel_type.lower()}.pth"
+            
+            for epoch in range(num_epochs):
+                # Learning rate warmup
+                if epoch < warmup_epochs:
+                    lr = learning_rate * (epoch + 1) / warmup_epochs
+                    for param_group in optimizer.param_groups:
+                        param_group['lr'] = lr
+                
+                train_loss, train_top1_acc, train_top5_acc = train_epoch(
+                    patched_model, train_loader, criterion, optimizer, device, epoch, writer, model_name, kernel_type
+                )
+                val_loss, val_top1_acc, val_top5_acc = evaluate(
+                    patched_model, val_loader, criterion, device, epoch, writer, model_name, kernel_type, "Val"
+                )
+                
+                logger.info(f"Epoch {epoch+1}/{num_epochs} - "
+                           f"Train Loss: {train_loss:.4f}, Train Top1 Acc: {train_top1_acc:.2f}%, Train Top5 Acc: {train_top5_acc:.2f}%, "
+                           f"Val Loss: {val_loss:.4f}, Val Top1 Acc: {val_top1_acc:.2f}%, Val Top5 Acc: {val_top5_acc:.2f}%")
+                
+                # Save best model based on validation accuracy
+                if val_top1_acc > best_val_acc:
+                    best_val_acc = val_top1_acc
+                    epochs_no_improve = 0
+                    torch.save(patched_model.state_dict(), best_checkpoint_path)
+                    logger.info(f"Saved best model at {best_checkpoint_path} with Val Top1 Acc: {best_val_acc:.2f}%")
+                else:
+                    epochs_no_improve += 1
+                
+                # Early stopping
+                if epochs_no_improve >= patience:
+                    logger.info(f"Early stopping triggered after {epoch+1} epochs")
+                    break
+                
+                # Update scheduler after warmup
+                if epoch >= warmup_epochs:
+                    scheduler.step()
+            
+            # Evaluate on test set with best model
+            logger.info(f"Loading best model for {model_name} ({kernel_type}) for final test evaluation")
+            patched_model.load_state_dict(torch.load(best_checkpoint_path))
+            test_loss, test_top1_acc, test_top5_acc = evaluate(
+                patched_model, test_loader, criterion, device, epoch, writer, model_name, kernel_type, "Test"
+            )
+            logger.info(f"Final Test Results - Test Loss: {test_loss:.4f}, Test Top1 Acc: {test_top1_acc:.2f}%, Test Top5 Acc: {test_top5_acc:.2f}%")
+            
+            writer.close()
 
 if __name__ == "__main__":
     main()
