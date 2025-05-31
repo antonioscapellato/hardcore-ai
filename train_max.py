@@ -13,7 +13,7 @@ from bitbybit.utils.data import (
     CIFAR100_STD,
 )
 import bitbybit as bb
-from bitbybit.config.resnet20 import resnet20_full_patch_config
+from bitbybit.config.resnet20 import resnet20_full_patch_cifar10, resnet20_full_patch_cifar100
 
 from train.logger import get_writer
 from train.trainer import train_model, evaluate_model
@@ -54,15 +54,15 @@ def main():
 
     # Define models to train
     models = [
-        ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader),
-        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader),
+        ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader, resnet20_full_patch_cifar10),
+        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader, resnet20_full_patch_cifar100),
     ]
 
     # Common hyperparameters
     num_epochs = 5
     learning_rate = 0.001
 
-    for model_name, model, train_loader, test_loader in models:
+    for model_name, model, train_loader, test_loader, model_patch in models:
         print(f"Starting training for {model_name} on device {device}")
 
         # Keep a copy of the original pretrained model for scoring
@@ -70,7 +70,7 @@ def main():
         original_model.to(device)
     
         # Patch the model with hash kernels
-        hashed_model = bb.patch_model(model, config=resnet20_full_patch_config)
+        hashed_model = bb.patch_model(model, config=model_patch)
         hashed_model.to(device)
     
         # Initialize loss and optimizer
