@@ -98,6 +98,7 @@ def evaluate_model(model: torch.nn.Module,
 
     # Log validation loss and accuracy to TensorBoard
     writer.add_scalar("Validation/Loss", avg_test_loss, epoch)
+    writer.add_scalar("Test/Loss", avg_test_loss, epoch)
     writer.add_scalar("Validation/Accuracy", accuracy, epoch)
 
     return accuracy
