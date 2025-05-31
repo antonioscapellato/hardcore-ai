@@ -1,5 +1,6 @@
 from pathlib import Path
 import torch
+from tqdm import tqdm
 
 from bitbybit.utils.models import get_backbone
 from bitbybit.utils.data import get_loaders, CIFAR10_MEAN, CIFAR10_STD, CIFAR100_MEAN, CIFAR100_STD
@@ -29,12 +30,22 @@ def train_model(device, model, train_loader, test_loader):
         # optimizer = torch.optim.AdamW(model.parameters(), lr=conf.lr)
     optimizer = torch.optim.SGD(model.parameters(), lr=conf.lr, momentum=0.9, weight_decay=5e-4, nesterov=True)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=conf.epochs, eta_min=0) 
-    train_loss = 0
     model.to(device)
     model.train()
-    for epoch in range(conf.epochs):
-        # training
-        for images, labels in train_loader:
+    
+    # Create a progress bar for epochs
+    epoch_pbar = tqdm(range(conf.epochs), desc="Training Progress", position=0)
+    
+    for epoch in epoch_pbar:
+        # Reset train loss for each epoch
+        train_loss = 0
+        batch_count = 0
+        
+        # Create a progress bar for batches within the current epoch
+        batch_pbar = tqdm(train_loader, desc=f"Epoch {epoch+1}/{conf.epochs}", position=1, leave=False, 
+                          total=len(train_loader))
+        
+        for images, labels in batch_pbar:
             images, labels = images.to(device), labels.to(device)
             optimizer.zero_grad()
             
@@ -43,11 +54,26 @@ def train_model(device, model, train_loader, test_loader):
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-            train_loss += loss.item()
             
+            # Update batch progress bar with current loss
+            current_loss = loss.item()
+            train_loss += current_loss
+            batch_count += 1
+            batch_pbar.set_postfix({'loss': f"{current_loss:.4f}"})
+            
+        # Close the batch progress bar
+        batch_pbar.close()
+        
+        # Calculate average loss for the epoch
+        avg_train_loss = train_loss / batch_count if batch_count > 0 else 0
+        
+        # Validate model and update learning rate
         accuracy = validate_model(device, model, test_loader)
         scheduler.step()
-        print(f"Epoch [{epoch+1}/{conf.epochs}], Train Loss: {train_loss:.4f}, Accuracy: {accuracy:.2f}%")
+        
+        # Update epoch progress bar with metrics
+        epoch_pbar.set_postfix({'loss': f"{avg_train_loss:.4f}", 'accuracy': f"{accuracy:.2f}%"})
+        print(f"Epoch [{epoch+1}/{conf.epochs}], Train Loss: {avg_train_loss:.4f}, Accuracy: {accuracy:.2f}%")
     
     return model
         
@@ -63,7 +89,7 @@ def main():
         mean=CIFAR10_MEAN,
         std=CIFAR10_STD,
         num_workers=2,
-        pin_memory=True,
+        pin_memory=False,
     )
 
     cifar_100_train_loader, cifar_100_test_loader = get_loaders(
@@ -73,12 +99,12 @@ def main():
         mean=CIFAR100_MEAN,
         std=CIFAR100_STD,
         num_workers=2,
-        pin_memory=True,
+        pin_memory=False,
     )
 
     models = [
         ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader),
-        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader),
+        # ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader),
     ]
 
     for model_name, model, train_loader, test_loader in models:

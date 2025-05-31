@@ -35,8 +35,8 @@ def get_loaders(
     batch_size: int,
     mean: Sequence[float],
     std: Sequence[float],
-    num_workers: int = 4,
-    pin_memory: bool = True,
+    num_workers: int = 2,
+    pin_memory: bool = False,
 ) -> Tuple[DataLoader, DataLoader]:
     """
     Creates and returns training and testing DataLoaders for CIFAR10 or CIFAR100.
