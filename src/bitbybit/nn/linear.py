@@ -121,14 +121,14 @@ class HashLinear(_HashableModule):
 
     @classmethod
     def from_torch_module(
-        cls: type[Self],
+        cls,
         module: nn.Linear,
         input_tile_size: int = 64,
         output_tile_size: int = 64,
         hash_kernel_type: str | None = None,
         hash_length: int = DEFAULT_HASH_LENGTH,
         **kwargs,
-    ) -> Self:
+    ) -> HashLinear:
         """
         Creates a HashLinear layer from an nn.Linear module.
         Args:

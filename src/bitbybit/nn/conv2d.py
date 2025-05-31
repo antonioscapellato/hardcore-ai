@@ -211,14 +211,14 @@ class HashConv2d(_HashableModule):
 
     @classmethod
     def from_torch_module(
-        cls: type[Self],
+        cls,
         module: nn.Conv2d,
         input_tile_size: int = 128,
         output_tile_size: int = 128,
         hash_kernel_type: str | None = None,
         hash_length: int = 128,
         **kwargs,
-    ) -> Self:
+    ) -> HashConv2d:
         """
         Creates a HashConv2d layer from an nn.Conv2d module.
         Args:
