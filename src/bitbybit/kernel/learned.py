@@ -6,11 +6,16 @@ from ._base import _HashKernel
 
 class SignSTE(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, x) -> torch.Tensor:
+    def forward(ctx, x):
+        ctx.save_for_backward(x)
         return x.sign()
+
     @staticmethod
-    def backward(ctx, grad_outputs): # type: ignore
-        return grad_outputs # maybe apply sigmoid/tanh or other surrogate derivative here; try add noise?
+    def backward(ctx, grad_out):
+        (x,) = ctx.saved_tensors
+        # e.g. hard-tanh surrogate
+        grad = grad_out * (x.abs() <= 1).to(grad_out.dtype)
+        return grad
 
 class LearnedProjKernel(_HashKernel):
 
@@ -42,8 +47,9 @@ class LearnedProjKernel(_HashKernel):
     def _estimate_cosine_internal(
         self, codes_1: torch.Tensor, codes_2_matmuled: torch.Tensor
     ) -> torch.Tensor:
+        K = self.hash_length
         dot = codes_1 @ codes_2_matmuled
-        return (codes_1.shape[-1] - dot) / 2 # Hamming distance, est cos(theta)
+        return (K - dot) / 2 # Hamming distance, est cos(theta)
 
     def extra_repr(self) -> str:
         return (

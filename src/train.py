@@ -31,13 +31,14 @@ def train_model(device, model, train_loader, test_loader):
     optimizer = torch.optim.SGD(model.parameters(), lr=conf.lr, momentum=0.9, weight_decay=5e-4, nesterov=True)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=conf.epochs, eta_min=0) 
     model.to(device)
-    model.train()
+
     
     # Create a progress bar for epochs
     epoch_pbar = tqdm(range(conf.epochs), desc="Training Progress", position=0)
     
     for epoch in epoch_pbar:
         # Reset train loss for each epoch
+        model.train()
         train_loss = 0
         batch_count = 0
         
@@ -85,20 +86,20 @@ def main():
     cifar_10_train_loader, cifar_10_test_loader = get_loaders(
         dataset_name="CIFAR10",
         data_dir=Path(__file__).parent / "data",
-        batch_size=128,
+        batch_size=conf.batch_size,
         mean=CIFAR10_MEAN,
         std=CIFAR10_STD,
-        num_workers=2,
+        num_workers=0,
         pin_memory=False,
     )
 
     cifar_100_train_loader, cifar_100_test_loader = get_loaders(
         dataset_name="CIFAR100",
         data_dir=Path(__file__).parent / "data",
-        batch_size=128,     
+        batch_size=conf.batch_size,     
         mean=CIFAR100_MEAN,
         std=CIFAR100_STD,
-        num_workers=2,
+        num_workers=0,
         pin_memory=False,
     )
 
