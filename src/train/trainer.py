@@ -1,6 +1,7 @@
 import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
+import torch.nn as nn
 from test.evaluation import compute_score
 from pathlib import Path
 import bitbybit as bb
