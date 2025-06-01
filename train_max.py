@@ -38,6 +38,18 @@ def main():
         default=7,
         help="Number of epochs to train in simple mode (default: 7)",
     )
+    parser.add_argument(
+        "--init_pth_cifar10",
+        type=str,
+        default=None,
+        help="Path to .pth file to initialize weights for cifar10_resnet20 model",
+    )
+    parser.add_argument(
+        "--init_pth_cifar100",
+        type=str,
+        default=None,
+        help="Path to .pth file to initialize weights for cifar100_resnet20 model",
+    )
     args = parser.parse_args()
 
     # Determine device
