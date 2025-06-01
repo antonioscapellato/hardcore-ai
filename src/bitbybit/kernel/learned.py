@@ -22,18 +22,12 @@ class LearnedProjKernel(_HashKernel):
 
     class SignSTE(torch.autograd.Function):
         @staticmethod
-        def forward(ctx, x, k: float = 20.0):
-            ctx.save_for_backward(x)   # we’ll need x in backward
-            ctx.k = k
+        def forward(ctx, x):
             return x.sign()            # hard ±1
 
         @staticmethod
         def backward(ctx, grad_out):
-            (x,) = ctx.saved_tensors
-            k = ctx.k
-            # sech²(kx) = 1 − tanh²(kx)
-            surrogate_grad = k * (1.0 - torch.tanh(k * x).pow(2))
-            return grad_out * surrogate_grad, None   # None → no grad for k
+            return torch.nn.functional.hardtanh(grad_out)
 
     def _compute_codes_internal(self, unit_vectors: torch.Tensor) -> torch.Tensor:
         # Compute binary hash codes using learnable projection matrix
