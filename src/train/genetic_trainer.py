@@ -188,29 +188,29 @@ def genetic_train(
             log_message(f"  {layer}.hash_length: {config[layer]['hash_length']}", log_path)
         log_message(f"  learning_rate: {config['learning_rate']}", log_path)
         log_message(f"Submission Score: {score:.4f}", log_path)
-            print(f"Individual {idx+1} Score: {score:.4f}")
+        print(f"Individual {idx+1} Score: {score:.4f}")
 
-            # Save checkpoint if score is better
-            if score > best_score:
-                best_score = score
-                best_model = copy.deepcopy(hashed_model)
-                best_config = copy.deepcopy(config)
-                checkpoint_path = output_dir / f"{model_name}.pth"
-                torch.save(best_model.state_dict(), checkpoint_path)
-                print(f"New best score: {best_score:.4f}. Saved checkpoint to {checkpoint_path}")
-                log_message(f"New best score: {score:.4f}", log_path)
-            # Save learned projection matrices
-            kernel_dir = output_dir.parent / "src" / "bitbybit" / "kernel"
-            proj_path = kernel_dir / f"learned_{model_name}_best.pth"
-            projection_state_dict = {
-                name: module.projection_matrix.data
-                for name, module in hashed_model.named_modules()
-                if isinstance(module, LearnedProjKernel)
-            }
-            torch.save(projection_state_dict, proj_path)
-            log_message(f"Saved learned projection matrices to {proj_path}", log_path)
+        # Save checkpoint if score is better
+        if score > best_score:
+            best_score = score
+            best_model = copy.deepcopy(hashed_model)
+            best_config = copy.deepcopy(config)
+            checkpoint_path = output_dir / f"{model_name}.pth"
+            torch.save(best_model.state_dict(), checkpoint_path)
+            print(f"New best score: {best_score:.4f}. Saved checkpoint to {checkpoint_path}")
+            log_message(f"New best score: {score:.4f}", log_path)
+        # Save learned projection matrices
+        kernel_dir = output_dir.parent / "src" / "bitbybit" / "kernel"
+        proj_path = kernel_dir / f"learned_{model_name}_best.pth"
+        projection_state_dict = {
+            name: module.projection_matrix.data
+            for name, module in hashed_model.named_modules()
+            if isinstance(module, LearnedProjKernel)
+        }
+        torch.save(projection_state_dict, proj_path)
+        log_message(f"Saved learned projection matrices to {proj_path}", log_path)
 
-            writer.close()
+        writer.close()
 
         # Create next generation
         new_population = []
