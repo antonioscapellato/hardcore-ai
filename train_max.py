@@ -59,7 +59,7 @@ def main():
     ]
 
     # Common hyperparameters
-    num_epochs = 5
+    num_epochs = 7
     learning_rate = 0.001
 
     for model_name, model, train_loader, test_loader, model_patch in models:
