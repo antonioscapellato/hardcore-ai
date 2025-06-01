@@ -128,9 +128,9 @@ def genetic_train(
     best_score = float('-inf')
     best_model = None
     best_config = None
-log_path = output_dir / f"{model_name}_genetic_log.txt"
-log_message(f"Starting genetic search for {model_name}", log_path)
-log_message(f"Population size: {population_size}, Generations: {num_generations}", log_path)
+    log_path = output_dir / f"{model_name}_genetic_log.txt"
+    log_message(f"Starting genetic search for {model_name}", log_path)
+    log_message(f"Population size: {population_size}, Generations: {num_generations}", log_path)
 
     for generation in range(num_generations):
         print(f"[Generation {generation+1}/{num_generations}]")
