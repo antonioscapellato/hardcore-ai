@@ -121,10 +121,13 @@ def genetic_train(
     population_size: int = 8,
     tournament_size: int = 3,
     mutation_rate: float = 0.1,
-    max_epochs: int = 8,
+    max_epochs: int = 4,
 ) -> Tuple[nn.Module, float]:
     """Run genetic algorithm to optimize hash lengths and learning rate."""
     population = initialize_population(base_config, population_size)
+    # Initialize total remaining epochs across all generations and individuals
+    remaining_epochs = num_generations * population_size * max_epochs
+
     best_score = float('-inf')
     best_model = None
     best_config = None
@@ -137,6 +140,8 @@ def genetic_train(
         log_message(f"[Generation {generation+1}]", log_path)
         scores = []
         for idx, config in enumerate(population):
+            # Print how many epochs remain in total
+            print(f"Epochs remaining across all iterations: {remaining_epochs}")
             print(f"Evaluating individual {idx+1}/{population_size}")
             print(f"Current configuration for individual {idx+1}: {config}")
             # Create and patch model
@@ -182,6 +187,9 @@ def genetic_train(
             # Compute score
             _, _, score = compute_score(original_model, hashed_model, test_loader, device)
             scores.append(score)
+
+            # Decrement remaining_epochs by the epochs just run
+            remaining_epochs -= max_epochs
         log_message(f"Individual {idx+1}:", log_path)
         log_message("Configuration:", log_path)
         for layer in sorted([k for k in config if k not in ["common_params", "learning_rate"]]):
