@@ -21,7 +21,7 @@ LR_RANGE = [0.0001, 0.0005, 0.001, 0.002, 0.005]
 def initialize_population(
     base_config: Dict[str, Dict[str, any]], population_size: int
 ) -> List[Dict[str, any]]:
-    \"\"\"Initialize population with hash lengths decreasing from shallow to deep layers.\"\"\"
+    "\"\"Initialize population with hash lengths decreasing from shallow to deep layers.\"\"\"
     population = []
     # Identify layer keys (exclude common_params) and sort by depth (fewer dots = shallower)
     layer_keys = [k for k in base_config if k != "common_params"]
