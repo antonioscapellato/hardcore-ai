@@ -13,12 +13,8 @@ from bitbybit.utils.data import (
     CIFAR100_STD,
 )
 import bitbybit as bb
-from bitbybit.config.resnet20 import resnet20_full_patch_config, submission_config_cifar10, submission_config_cifar100
-
-from train.logger import get_writer
-from train.trainer import train_model, evaluate_model
-
-# Import evaluation utilities
+from bitbybit.config.resnet20 import submission_config_cifar10, submission_config_cifar100
+from train.genetic_trainer import genetic_train
 from test.evaluation import evaluate_accuracy, compute_score
 
 def main():
@@ -58,76 +54,34 @@ def main():
         ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader, submission_config_cifar100),
     ]
 
-    # Common hyperparameters
-    num_epochs = 5
-    learning_rate = 0.001
-
     for model_name, model, train_loader, test_loader, model_patch in models:
-        print(f"Starting training for {model_name} on device {device}")
+        print(f"Starting genetic training for {model_name} on device {device}")
 
         # Keep a copy of the original pretrained model for scoring
         original_model = copy.deepcopy(model)
         original_model.to(device)
-    
-        # Patch the model with hash kernels
-        hashed_model = bb.patch_model(model, config=model_patch)
-        hashed_model.to(device)
-    
-        # Initialize loss and optimizer
-        criterion = torch.nn.CrossEntropyLoss()
-        # Freeze all parameters except learned projection matrices
-        for param in hashed_model.parameters():
-            param.requires_grad = False
-        # Unfreeze learned projection matrices
-        for module in hashed_model.modules():
-            if isinstance(module, bb.LearnedProjKernel):
-                module.projection_matrix.requires_grad = True
-        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, hashed_model.parameters()), lr=learning_rate)
-    
-        # Initialize TensorBoard writer
-        writer = get_writer(str(OUTPUT_DIR), model_name)
-    
-        # Train and evaluate (now passing original_model to compute scores)
-        train_model(
-            hashed_model,
-            original_model,
-            train_loader,
-            test_loader,
-            criterion,
-            optimizer,
-            num_epochs,
-            device,
-            writer,
-            OUTPUT_DIR,
-            model_name,
-            log_interval=50,  # Log every 50 batches
-        )
 
-        # Evaluate after final epoch
-        accuracy = evaluate_model(
-            model=hashed_model,
+        # Run genetic algorithm
+        best_model, best_score = genetic_train(
+            model_name=model_name,
+            original_model=original_model,
+            train_loader=train_loader,
             test_loader=test_loader,
-            criterion=criterion,
+            output_dir=OUTPUT_DIR,
             device=device,
-            writer=writer,
-            epoch=num_epochs,
+            base_config=model_patch,
+            num_generations=10,
+            population_size=8,
+            tournament_size=3,
+            mutation_rate=0.1,
+            max_epochs=8,
         )
 
-        # Compute hashed_model accuracy (redundant with evaluate_model's logged accuracy),
-        # but use evaluate_accuracy for consistency in scoring
-        hashed_accuracy = evaluate_accuracy(hashed_model, test_loader, device)
-        print(f"[{model_name}] Hashed Model Accuracy (post-hashing/training): {hashed_accuracy:.2f}%")
-
-        # Compute submission score, using orig_accuracy computed earlier
-        _, _, submission_score = compute_score(original_model, hashed_model, test_loader, device)
-        print(f"[{model_name}] Submission Score: {submission_score:.4f}")
-        # Log hashed_accuracy and submission_score to TensorBoard at final epoch
-        writer.add_scalar("Evaluation/Hashed_Accuracy", hashed_accuracy, num_epochs)
-        writer.add_scalar("Score/Submission_Score", submission_score, num_epochs)
-
-        # Close the TensorBoard writer
-        writer.close()
+        # Evaluate final model
+        hashed_accuracy = evaluate_accuracy(best_model, test_loader, device)
+        print(f"[{model_name}] Best Hashed Model Accuracy: {hashed_accuracy:.2f}%")
+        print(f"[{model_name}] Best Submission Score: {best_score:.4f}")
 
 if __name__ == "__main__":
-    print(">>> Launching train_max.py", flush=True)
+    print(">>> Launching train_max.py with genetic algorithm", flush=True)
     main()
