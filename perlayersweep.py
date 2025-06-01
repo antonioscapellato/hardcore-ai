@@ -26,6 +26,8 @@ def validate_model(device, model, test_loader):
             _, predicted = outputs.max(1)
             total += labels.size(0)
             correct += predicted.eq(labels).sum().item()
+    model.to("cpu")
+    torch.cuda.empty_cache() 
     return 100 * correct / total
             
 
@@ -43,7 +45,7 @@ def sweep_hash_lengths(
     Greedy per-layer sweep:  pick the shortest hash_length that keeps
     accuracy within `tol_pp` of the current best.
     """
-    print("⏳ running baseline …")
+    print(f"⏳ running baseline on device {device} …")
     model = bb.patch_model(model, config=base_cfg)
     base_acc = validate_model(device, model, test_loader)
     print(f" {backbone_name}  baseline = {base_acc:.2f}%")
@@ -61,8 +63,8 @@ def sweep_hash_lengths(
             trial_cfg = copy.deepcopy(new_cfg)
             trial_cfg[name]["hash_length"] = bits
 
-            model = bb.patch_model(model, config=trial_cfg)
-            acc = validate_model(device, model, test_loader,)
+            new_model = bb.patch_model(model, config=trial_cfg)
+            acc = validate_model(device, new_model, test_loader)
 
             if acc >= base_acc - tol_pp:
                 best_len = bits
@@ -71,9 +73,6 @@ def sweep_hash_lengths(
                 break
 
     return new_cfg
-# <<< LAYER SWEEP <<<
-
-
 
 
 
@@ -100,12 +99,7 @@ def main():
         pin_memory=True,
     )
     
-    DEVICE = "cpu"
-    VAL_BATCHES = 40          # ~5 k images ≈ 1 min
-
-    hash_candidates = [64, 128, 256, 512, 1024, 2048]
-    layers = ["layer1.0", "layer1.1", "layer2.0",
-            "layer2.1", "layer3.0", "layer3.1"]
+    DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
     
 
     models = [
@@ -125,11 +119,15 @@ def main():
 
         model10 = bb.patch_model(model, config=cfg10_best)
         acc10 = validate_model(DEVICE, model10, test_loader)
+        
+        print(cfg10_best)
         print(f"{model_name}  final = {acc10:.2f}%")
         
-        
-        
 
+        with open(f"{model_name}_best.py", "w") as f:
+            f.write(f"resnet20_full_patch_config = {cfg10_best!r}\n")
+        
+        
 
 
 if __name__ == "__main__":
