@@ -160,12 +160,7 @@ def genetic_train(
             hashed_model = patch_model(model, config)
             hashed_model.to(device)
 
-            # Freeze all parameters except learned projection matrices
-            for param in hashed_model.parameters():
-                param.requires_grad = False
-            for module in hashed_model.modules():
-                if isinstance(module, LearnedProjKernel):
-                    module.projection_matrix.requires_grad = True
+            # (Unfreezing entire network: no parameters are frozen)
 
             # Optimizer with learning rate from config
             lr = config["learning_rate"]
