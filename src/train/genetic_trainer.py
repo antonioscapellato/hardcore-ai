@@ -11,6 +11,7 @@ from bitbybit import patch_model
 from test.evaluation import compute_score, evaluate_accuracy
 from train.trainer import train_model
 from train.logger import get_writer
+from bitbybit.kernel.learned import LearnedProjKernel
 
 # Possible hash lengths (powers of 2)
 HASH_LENGTHS = [512, 1024, 2048, 4096]
@@ -115,7 +116,7 @@ def genetic_train(
             for param in hashed_model.parameters():
                 param.requires_grad = False
             for module in hashed_model.modules():
-                if isinstance(module, bb.LearnedProjKernel):
+                if isinstance(module, LearnedProjKernel):
                     module.projection_matrix.requires_grad = True
 
             # Optimizer with learning rate from config
