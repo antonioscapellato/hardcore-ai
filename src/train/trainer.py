@@ -28,8 +28,8 @@ def train_model(model: torch.nn.Module,
                 output_dir: Path,
                 model_name: str,
                 log_interval: int = 10,
-                initial_beta: float = 1.0,
-                max_beta: float = 100.0) -> None:
+                initial_beta: float = 0.1,
+                max_beta: float = 5.0) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
     to both console and TensorBoard. Also evaluates on test set and logs submission score
