@@ -99,11 +99,24 @@ def main():
         patched_model = bb.patch_model(copy.deepcopy(model), model_patch)
         patched_model.to(device)
 
+        # Freeze all parameters
+        for param in patched_model.parameters():
+            param.requires_grad = False
+
+        # Unfreeze parameters in LearnedProjKernel
+        from bitbybit.kernel.learned import LearnedProjKernel
+        for module in patched_model.modules():
+            if isinstance(module, LearnedProjKernel):
+                for param in module.parameters():
+                    param.requires_grad = True
+
         # Setup TensorBoard writer
         writer = get_writer(str(OUTPUT_DIR), f"{model_name}_simple")
         criterion = torch.nn.CrossEntropyLoss()
         learning_rate = 0.001
-        optimizer = torch.optim.Adam(patched_model.parameters(), lr=learning_rate)
+        # Create optimizer only on learnable parameters
+        learnable_params = [param for param in patched_model.parameters() if param.requires_grad]
+        optimizer = torch.optim.Adam(learnable_params, lr=learning_rate)
 
         # Train for specified epochs
         train_model(
