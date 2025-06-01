@@ -21,23 +21,24 @@ LR_RANGE = [0.0001, 0.0005, 0.001, 0.002, 0.005]
 def initialize_population(
     base_config: Dict[str, Dict[str, any]], population_size: int
 ) -> List[Dict[str, any]]:
-    """Initialize population with variations of hash lengths and learning rates."""
+    \"\"\"Initialize population with hash lengths decreasing from shallow to deep layers.\"\"\"
     population = []
+    # Identify layer keys (exclude common_params) and sort by depth (fewer dots = shallower)
+    layer_keys = [k for k in base_config if k != "common_params"]
+    layer_keys.sort(key=lambda x: (x.count("."), x))
+
     for _ in range(population_size):
         individual = copy.deepcopy(base_config)
-        # Modify hash lengths, favoring reduction in deeper layers
-        for layer in individual:
-            if layer == "common_params":
-                continue
-            current_hl = individual[layer]["hash_length"]
-            # Bias towards reducing hash length in deeper layers
-            layer_idx = sum(1 for k in individual if k.startswith("layer") and k < layer)
-            reduction_prob = 0.3 + 0.1 * layer_idx  # Increase chance of reduction
-            if random.random() < reduction_prob:
-                valid_hls = [hl for hl in HASH_LENGTHS if hl <= current_hl]
-            else:
-                valid_hls = HASH_LENGTHS
-            individual[layer]["hash_length"] = random.choice(valid_hls) if valid_hls else current_hl
+        # Pick a random hash length for the shallowest layer
+        prev_hl = random.choice(HASH_LENGTHS)
+        for layer in layer_keys:
+            base_hl = individual[layer].get("hash_length", prev_hl)
+            # Determine valid lengths (<= prev_hl)
+            valid_hls = [hl for hl in HASH_LENGTHS if hl <= prev_hl]
+            # Choose randomly among valid lengths
+            chosen_hl = random.choice(valid_hls) if valid_hls else base_hl
+            individual[layer]["hash_length"] = chosen_hl
+            prev_hl = chosen_hl
         # Add learning rate to individual
         individual["learning_rate"] = random.choice(LR_RANGE)
         population.append(individual)
@@ -107,6 +108,7 @@ def genetic_train(
         scores = []
         for idx, config in enumerate(population):
             print(f"Evaluating individual {idx+1}/{population_size}")
+            print(f"Current configuration for individual {idx+1}: {config}")
             # Create and patch model
             model = copy.deepcopy(original_model).to(device)
             hashed_model = patch_model(model, config)
