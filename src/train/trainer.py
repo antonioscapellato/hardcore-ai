@@ -1,20 +1,8 @@
 import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
-import torch.nn as nn
 from test.evaluation import compute_score
 from pathlib import Path
-import bitbybit as bb
-
-def get_learned_proj_kernels(model: nn.Module) -> list[bb.LearnedProjKernel]:
-    kernels = []
-    for module in model.modules():
-        if isinstance(module, (bb.HashLinear, bb.HashConv2d)):
-            for row in module.hash_kernels:
-                for kernel in row:
-                    if isinstance(kernel, bb.LearnedProjKernel):
-                        kernels.append(kernel)
-    return kernels
 
 def train_model(model: torch.nn.Module,
                 original_model: torch.nn.Module,
@@ -27,9 +15,7 @@ def train_model(model: torch.nn.Module,
                 writer: SummaryWriter,
                 output_dir: Path,
                 model_name: str,
-                log_interval: int = 2.0,
-                initial_beta: float = 0.05,
-                max_beta: float = 5.0) -> None:
+                log_interval: int = 10) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
     to both console and TensorBoard. Also evaluates on test set and logs submission score
@@ -84,16 +70,6 @@ def train_model(model: torch.nn.Module,
 
         # Log the average training loss per epoch
         writer.add_scalar("Train/Epoch_Avg_Loss", avg_epoch_loss, epoch + 1)
-
-        # Anneal beta for LearnedProjKernel
-        if num_epochs > 1 and epoch < num_epochs - 1:
-            beta = initial_beta + (max_beta - initial_beta) * (epoch / (num_epochs - 1))
-        else:
-            beta = max_beta
-        learned_kernels = get_learned_proj_kernels(model)
-        for kernel in learned_kernels:
-            kernel.beta = beta
-        writer.add_scalar("Hyperparameters/beta", beta, epoch + 1)
 
         # Evaluate on test set after each epoch
         evaluate_model(model, test_loader, criterion, device, writer, epoch + 1)

@@ -11,7 +11,6 @@ class LearnedProjKernel(_HashKernel):
         self, in_features: int, out_features: int, hash_length: int, **kwargs
     ) -> None:
         super().__init__(in_features, out_features, hash_length)
-        self.beta = kwargs.get('initial_beta', 1.0)
 
         # LSH projection matrix (learnable)
         initial_proj_mat = torch.randn(hash_length, self.in_features)
@@ -34,11 +33,12 @@ class LearnedProjKernel(_HashKernel):
             return grad_output
 
     def _compute_codes_internal(self, unit_vectors: torch.Tensor) -> torch.Tensor:
-        # Compute hash codes using learnable projection matrix and tanh with temperature
+        # Compute binary hash codes using learnable projection matrix
         # Input: unit_vectors (..., in_features), projection_matrix (hash_length, in_features)
-        # Output shape: (..., hash_length) with values approximately {-1, 1}
+        # Use STE to make the sign operation differentiable for optimization
+        # Output shape: (..., hash_length) with values {-1, 1}
         projection = unit_vectors @ self.projection_matrix.T
-        codes = torch.tanh(self.beta * projection)
+        codes = self.SignSTE.apply(projection)
         return codes
 
     def _estimate_cosine_internal(
