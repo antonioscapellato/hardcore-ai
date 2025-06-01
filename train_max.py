@@ -50,8 +50,9 @@ def main():
 
     # Define models to train
     models = [
+        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader,
+         submission_config_cifar100),
         ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader, submission_config_cifar10),
-        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader, submission_config_cifar100),
     ]
 
     for model_name, model, train_loader, test_loader, model_patch in models:
