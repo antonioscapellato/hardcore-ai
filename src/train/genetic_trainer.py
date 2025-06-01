@@ -17,28 +17,54 @@ from bitbybit.kernel.learned import LearnedProjKernel
 HASH_LENGTHS = [512, 1024, 2048, 4096]
 # Learning rate range
 LR_RANGE = [0.0001, 0.0005, 0.001, 0.002, 0.005]
+def log_message(message: str, log_path: Path) -> None:
+    """Append a message to the specified log file."""
+    with open(log_path, "a") as f:
+        f.write(message + "\n")
+
 
 def initialize_population(
     base_config: Dict[str, Dict[str, any]], population_size: int
 ) -> List[Dict[str, any]]:
-    """Initialize population with hash lengths decreasing from shallow to deep layers."""
+    """Initialize population with hash lengths decreasing from shallow to deep layers.
+    For CIFAR100, constrain hash lengths to [2048, 4096] and exclude uniform configurations."""
     population = []
     # Identify layer keys (exclude common_params) and sort by depth (fewer dots = shallower)
     layer_keys = [k for k in base_config if k != "common_params"]
     layer_keys.sort(key=lambda x: (x.count("."), x))
 
+    # Determine if this is CIFAR100 based on fc hash_length
+    is_cifar100 = False
+    fc_hl = base_config.get("fc", {}).get("hash_length", 0)
+    if fc_hl >= 2048:
+        is_cifar100 = True
+
     for _ in range(population_size):
-        individual = copy.deepcopy(base_config)
-        # Pick a random hash length for the shallowest layer
-        prev_hl = random.choice(HASH_LENGTHS)
-        for layer in layer_keys:
-            base_hl = individual[layer].get("hash_length", prev_hl)
-            # Determine valid lengths (<= prev_hl)
-            valid_hls = [hl for hl in HASH_LENGTHS if hl <= prev_hl]
-            # Choose randomly among valid lengths
-            chosen_hl = random.choice(valid_hls) if valid_hls else base_hl
-            individual[layer]["hash_length"] = chosen_hl
-            prev_hl = chosen_hl
+        while True:
+            individual = copy.deepcopy(base_config)
+            # Select appropriate hash length options
+            if is_cifar100:
+                lengths = [2048, 4096]
+            else:
+                lengths = HASH_LENGTHS
+
+            prev_hl = random.choice(lengths)
+            for layer in layer_keys:
+                base_hl = individual[layer].get("hash_length", prev_hl)
+                # Determine valid lengths (<= prev_hl) from lengths list
+                valid_hls = [hl for hl in lengths if hl <= prev_hl]
+                chosen_hl = random.choice(valid_hls) if valid_hls else base_hl
+                individual[layer]["hash_length"] = chosen_hl
+                prev_hl = chosen_hl
+
+            # Exclude extreme uniform configurations for CIFAR100
+            if is_cifar100:
+                layer_hls = [individual[layer]["hash_length"] for layer in layer_keys]
+                if len(set(layer_hls)) == 1:
+                    # uniform configuration; retry
+                    continue
+            break
+
         # Add learning rate to individual
         individual["learning_rate"] = random.choice(LR_RANGE)
         population.append(individual)
@@ -102,9 +128,13 @@ def genetic_train(
     best_score = float('-inf')
     best_model = None
     best_config = None
+log_path = output_dir / f"{model_name}_genetic_log.txt"
+log_message(f"Starting genetic search for {model_name}", log_path)
+log_message(f"Population size: {population_size}, Generations: {num_generations}", log_path)
 
     for generation in range(num_generations):
         print(f"[Generation {generation+1}/{num_generations}]")
+        log_message(f"[Generation {generation+1}]", log_path)
         scores = []
         for idx, config in enumerate(population):
             print(f"Evaluating individual {idx+1}/{population_size}")
@@ -152,6 +182,12 @@ def genetic_train(
             # Compute score
             _, _, score = compute_score(original_model, hashed_model, test_loader, device)
             scores.append(score)
+        log_message(f"Individual {idx+1}:", log_path)
+        log_message("Configuration:", log_path)
+        for layer in sorted([k for k in config if k not in ["common_params", "learning_rate"]]):
+            log_message(f"  {layer}.hash_length: {config[layer]['hash_length']}", log_path)
+        log_message(f"  learning_rate: {config['learning_rate']}", log_path)
+        log_message(f"Submission Score: {score:.4f}", log_path)
             print(f"Individual {idx+1} Score: {score:.4f}")
 
             # Save checkpoint if score is better
@@ -162,6 +198,17 @@ def genetic_train(
                 checkpoint_path = output_dir / f"{model_name}.pth"
                 torch.save(best_model.state_dict(), checkpoint_path)
                 print(f"New best score: {best_score:.4f}. Saved checkpoint to {checkpoint_path}")
+                log_message(f"New best score: {score:.4f}", log_path)
+            # Save learned projection matrices
+            kernel_dir = output_dir.parent / "src" / "bitbybit" / "kernel"
+            proj_path = kernel_dir / f"learned_{model_name}_best.pth"
+            projection_state_dict = {
+                name: module.projection_matrix.data
+                for name, module in hashed_model.named_modules()
+                if isinstance(module, LearnedProjKernel)
+            }
+            torch.save(projection_state_dict, proj_path)
+            log_message(f"Saved learned projection matrices to {proj_path}", log_path)
 
             writer.close()
 
@@ -179,4 +226,10 @@ def genetic_train(
             new_population.append(child)
         population = new_population
 
-    return best_model, best_score
+    log_message("Genetic search completed.", log_path)
+    log_message(f"Best submission score: {best_score:.4f}", log_path)
+    log_message("Best configuration:", log_path)
+    for layer in sorted([k for k in best_config if k not in ["common_params", "learning_rate"]]):
+        log_message(f"  {layer}.hash_length: {best_config[layer]['hash_length']}", log_path)
+    log_message(f"  learning_rate: {best_config['learning_rate']}", log_path)
+return best_model, best_score
