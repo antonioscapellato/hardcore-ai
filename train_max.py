@@ -13,7 +13,7 @@ from bitbybit.utils.data import (
     CIFAR100_STD,
 )
 import bitbybit as bb
-from bitbybit.config.resnet20 import resnet20_full_patch_cifar10, resnet20_full_patch_cifar100
+from bitbybit.config.resnet20 import resnet20_full_patch_config, submission_config_cifar10, submission_config_cifar100
 
 from train.logger import get_writer
 from train.trainer import train_model, evaluate_model
@@ -54,8 +54,8 @@ def main():
 
     # Define models to train
     models = [
-        ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader, resnet20_full_patch_cifar10),
-        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader, resnet20_full_patch_cifar100),
+        ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader, submission_config_cifar10),
+        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader, submission_config_cifar100),
     ]
 
     # Common hyperparameters

@@ -16,9 +16,6 @@ class LearnedProjKernel(_HashKernel):
         initial_proj_mat = torch.randn(hash_length, self.in_features)
         self._learnable_projection_matrix = nn.Parameter(initial_proj_mat)
 
-        # Temperature for sigmoid relaxation (start high, can be decayed externally)
-        self.tau: float = 1.0
-
     @property
     def projection_matrix(self) -> torch.Tensor:
         return self._learnable_projection_matrix
@@ -36,17 +33,12 @@ class LearnedProjKernel(_HashKernel):
             return grad_output
 
     def _compute_codes_internal(self, unit_vectors: torch.Tensor) -> torch.Tensor:
-        # Continuous relaxation via sigmoid (Binary Concrete style without Gumbel noise)
+        # Compute binary hash codes using learnable projection matrix
         # Input: unit_vectors (..., in_features), projection_matrix (hash_length, in_features)
-        # Output: codes in (-1, +1) by mapping sigmoid(z / tau)
-        # Store the intermediate sigmoid for quantization penalty
-        z = unit_vectors @ self.projection_matrix.T  # shape: (..., hash_length)
-        # Compute "soft" probabilities in (0,1)
-        sigmoid_out = torch.sigmoid(z / self.tau)
-        # Map to (-1, +1)
-        codes = 2.0 * sigmoid_out - 1.0
-        # Store for later penalty computation
-        self._last_sigmoid = sigmoid_out
+        # Use STE to make the sign operation differentiable for optimization
+        # Output shape: (..., hash_length) with values {-1, 1}
+        projection = unit_vectors @ self.projection_matrix.T
+        codes = self.SignSTE.apply(projection)
         return codes
 
     def _estimate_cosine_internal(
