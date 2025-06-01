@@ -124,8 +124,21 @@ def main():
         for module in hashed_model.modules():
             if isinstance(module, bb.LearnedProjKernel):
                 module.projection_matrix.requires_grad = True
-        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, hashed_model.parameters()), lr=learning_rate)
-    
+        base_lr = 1e-2               # small head can handle this
+        optimizer = torch.optim.AdamW(filter(lambda p: p.requires_grad, hashed_model.parameters()), lr=base_lr)
+
+        # opt = torch.optim.SGD(filter(lambda p: p.requires_grad, hashed_model.parameters()),
+        #                     lr=base_lr, momentum=0.9, weight_decay=5e-4)
+
+        steps_per_epoch = len(train_loader)
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            max_lr=base_lr * 5,       # peak
+            total_steps=steps_per_epoch * num_epochs,
+            pct_start=0.1,            # 10 % warm-up
+            div_factor=25,            # initial lr = max_lr / 25
+            final_div_factor=1e3      # final lr = max_lr / 1 000
+        ) 
         # Initialize TensorBoard writer
         writer = get_writer(str(OUTPUT_DIR), model_name)
     
@@ -142,7 +155,8 @@ def main():
             writer,
             OUTPUT_DIR,
             model_name,
-            log_interval=50,  # Log every 50 batches
+            log_interval=50, 
+            scheduler=scheduler# Log every 50 batches
         )
 
         # Evaluate after final epoch

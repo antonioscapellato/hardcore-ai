@@ -18,7 +18,8 @@ def train_model(model: torch.nn.Module,
                 writer: SummaryWriter,
                 output_dir: Path,
                 model_name: str,
-                log_interval: int = 1) -> None:
+                log_interval: int = 1,
+                scheduler: torch.optim.lr_scheduler._LRScheduler | None = None) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
     to both console and TensorBoard. Also evaluates on test set and logs submission score
@@ -46,7 +47,8 @@ def train_model(model: torch.nn.Module,
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
-
+            if scheduler is not None:
+                scheduler.step()
             batch_end_time = time.time()
             batch_time = batch_end_time - batch_start_time
 
