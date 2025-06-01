@@ -27,8 +27,8 @@ def train_model(model: torch.nn.Module,
                 writer: SummaryWriter,
                 output_dir: Path,
                 model_name: str,
-                log_interval: int = 10,
-                initial_beta: float = 0.1,
+                log_interval: int = 2.0,
+                initial_beta: float = 0.05,
                 max_beta: float = 5.0) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
