@@ -27,7 +27,7 @@ def initialize_population(
     base_config: Dict[str, Dict[str, any]], population_size: int
 ) -> List[Dict[str, any]]:
     """Initialize population with hash lengths decreasing from shallow to deep layers.
-    For CIFAR100, constrain hash lengths to [2048, 4096] and exclude uniform configurations."""
+    For CIFAR100, allow hash lengths [1024, 2048, 4096] but limit 1024 to at most 30% of layers, and exclude uniform configurations."""
     population = []
     # Identify layer keys (exclude common_params) and sort by depth (fewer dots = shallower)
     layer_keys = [k for k in base_config if k != "common_params"]
@@ -39,12 +39,15 @@ def initialize_population(
     if fc_hl >= 2048:
         is_cifar100 = True
 
+    total_layers = len(layer_keys)
+    max_1024 = int(total_layers * 0.3)
+
     for _ in range(population_size):
         while True:
             individual = copy.deepcopy(base_config)
             # Select appropriate hash length options
             if is_cifar100:
-                lengths = [2048, 4096]
+                lengths = [1024, 2048, 4096]
             else:
                 lengths = HASH_LENGTHS
 
@@ -60,8 +63,12 @@ def initialize_population(
             # Exclude extreme uniform configurations for CIFAR100
             if is_cifar100:
                 layer_hls = [individual[layer]["hash_length"] for layer in layer_keys]
+                # Check uniform
                 if len(set(layer_hls)) == 1:
-                    # uniform configuration; retry
+                    continue
+                # Check 1024 count <= 30% of layers
+                count_1024 = layer_hls.count(1024)
+                if count_1024 > max_1024:
                     continue
             break
 
@@ -135,6 +142,10 @@ def genetic_train(
     log_message(f"Starting genetic search for {model_name}", log_path)
     log_message(f"Population size: {population_size}, Generations: {num_generations}", log_path)
 
+    # Create 'genetic_iterations' folder if it does not exist:
+    genetic_dir = output_dir / "genetic_iterations"
+    genetic_dir.mkdir(parents=True, exist_ok=True)
+
     for generation in range(num_generations):
         print(f"[Generation {generation+1}/{num_generations}]")
         log_message(f"[Generation {generation+1}]", log_path)
@@ -183,6 +194,11 @@ def genetic_train(
             )
             # Step scheduler after training
             scheduler.step()
+
+            # Save this individual’s checkpoint
+            iteration_ckpt = genetic_dir / f"{model_name}_gen{generation}_ind{idx}.pth"
+            torch.save(hashed_model.state_dict(), iteration_ckpt)
+            print(f"Saved individual checkpoint to {iteration_ckpt}")
 
             # Compute score
             _, _, score = compute_score(original_model, hashed_model, test_loader, device)
