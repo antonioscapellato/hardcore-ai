@@ -11,6 +11,7 @@ class LearnedProjKernel(_HashKernel):
         self, in_features: int, out_features: int, hash_length: int, **kwargs
     ) -> None:
         super().__init__(in_features, out_features, hash_length)
+        self.beta = kwargs.get('initial_beta', 1.0)
 
         # LSH projection matrix (learnable)
         initial_proj_mat = torch.randn(hash_length, self.in_features)

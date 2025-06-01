@@ -1,3 +1,64 @@
-*pycache*
-src/data/
-*.egg-info
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+.eggs-info/
+
+# Virtual environments
+venv/
+ENV/
+env/
+.env
+.venv/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.iml
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Logs and database
+*.log
+*.sqlite3
+
+# PyTorch model checkpoints / weights
+*.pt
+*.pth
+*.ckpt
+
+# TensorBoard / monitoring
+runs/
+tb_logs/
+
+# Data files (if you keep raw datasets locally)
+data/
+datasets/
+*.csv
+*.h5
+*.hdf5
+
+# Training outputs / checkpoints
+checkpoints/
+outputs/
+results/
+
+# macOS / Windows system files
+.DS_Store
+Thumbs.db
+
+# Miscellaneous
+*.so
+
+# local .pth and logs
+submission_checkpoints/
+

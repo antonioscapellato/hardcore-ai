@@ -1,12 +1,12 @@
+from __future__ import annotations
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn.modules.utils import _pair
 import math
-from typing import Self
 
 from ._base import _HashableModule
-from bitbybit.kernel import kernel_factory, _HashKernel
+from bitbybit.kernel import kernel_factory
 
 DEFAULT_KERNEL_TYPE = "random_projection"
 DEFAULT_HASH_LENGTH = 4096
@@ -211,14 +211,14 @@ class HashConv2d(_HashableModule):
 
     @classmethod
     def from_torch_module(
-        cls: type[Self],
+        cls,
         module: nn.Conv2d,
         input_tile_size: int = 128,
         output_tile_size: int = 128,
         hash_kernel_type: str | None = None,
         hash_length: int = 128,
         **kwargs,
-    ) -> Self:
+    ) -> HashConv2d:
         """
         Creates a HashConv2d layer from an nn.Conv2d module.
         Args:

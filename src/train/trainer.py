@@ -1,21 +1,44 @@
 import time
 import torch
 from torch.utils.tensorboard import SummaryWriter
+import torch.nn as nn
+from test.evaluation import compute_score
+from pathlib import Path
+import os
+import bitbybit as bb
+
+def get_learned_proj_kernels(model: nn.Module) -> list[bb.LearnedProjKernel]:
+    kernels = []
+    for module in model.modules():
+        if isinstance(module, (bb.HashLinear, bb.HashConv2d)):
+            for row in module.hash_kernels:
+                for kernel in row:
+                    if isinstance(kernel, bb.LearnedProjKernel):
+                        kernels.append(kernel)
+    return kernels
 
 def train_model(model: torch.nn.Module,
+                original_model: torch.nn.Module,
                 train_loader: torch.utils.data.DataLoader,
+                test_loader: torch.utils.data.DataLoader,
                 criterion: torch.nn.Module,
                 optimizer: torch.optim.Optimizer,
                 num_epochs: int,
                 device: torch.device,
                 writer: SummaryWriter,
-                log_interval: int = 10) -> None:
+                output_dir: Path,
+                model_name: str,
+                log_interval: int = 10,
+                initial_beta: float = 0.1,
+                max_beta: float = 5.0) -> None:
     """
     Train the model, logging per-batch loss, batch accuracy, batch time, and per-epoch metrics
-    to both console and TensorBoard.
+    to both console and TensorBoard. Also evaluates on test set and logs submission score
+    after each epoch.
     """
     model.train()
     global_step = 0
+    best_score = float('-inf')
     for epoch in range(num_epochs):
         epoch_loss = 0.0
         epoch_start_time = time.time()
@@ -63,6 +86,37 @@ def train_model(model: torch.nn.Module,
         # Log the average training loss per epoch
         writer.add_scalar("Train/Epoch_Avg_Loss", avg_epoch_loss, epoch + 1)
 
+        # Anneal beta for LearnedProjKernel
+        if num_epochs > 1 and epoch < num_epochs - 1:
+            beta = initial_beta + (max_beta - initial_beta) * (epoch / (num_epochs - 1))
+        else:
+            beta = max_beta
+        learned_kernels = get_learned_proj_kernels(model)
+        for kernel in learned_kernels:
+            kernel.beta = beta
+        writer.add_scalar("Hyperparameters/beta", beta, epoch + 1)
+
+        # Evaluate on test set after each epoch
+        evaluate_model(model, test_loader, criterion, device, writer, epoch + 1)
+
+        # Compute and log submission score
+        orig_acc, hashed_acc, score = compute_score(original_model, model, test_loader, device)
+        print(f"[Epoch {epoch+1}/{num_epochs}] Submission Score: {score:.4f}")
+        writer.add_scalar("Score/Submission_Score", score, epoch + 1)
+        
+        # Write accuracy to log file
+        log_dir = Path(os.path.dirname(writer.log_dir))
+        log_file = log_dir / "accuracy_log.txt"
+        with open(log_file, "a") as f:
+            f.write(f"Epoch {epoch}: Submission Score = {score:.4f}\n")
+
+        # Save checkpoint on first epoch or if submission score improves
+        if epoch == 0 or score > best_score:
+            best_score = score
+            checkpoint_path = output_dir / f"{model_name}.pth"
+            torch.save(model.state_dict(), checkpoint_path)
+            print(f"[Epoch {epoch+1}] New best model. Saved checkpoint to {checkpoint_path}")
+
 def evaluate_model(model: torch.nn.Module,
                    test_loader: torch.utils.data.DataLoader,
                    criterion: torch.nn.Module,
@@ -101,4 +155,9 @@ def evaluate_model(model: torch.nn.Module,
     writer.add_scalar("Test/Loss", avg_test_loss, epoch)
     writer.add_scalar("Validation/Accuracy", accuracy, epoch)
 
+    # Write accuracy to log file
+    log_dir = Path(os.path.dirname(writer.log_dir))
+    log_file = log_dir / "accuracy_log.txt"
+    with open(log_file, "a") as f:
+        f.write(f"Epoch {epoch}: Accuracy = {accuracy:.2f}%\n")
     return accuracy

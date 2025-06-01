@@ -1,12 +1,12 @@
+from __future__ import annotations
 import math
-from typing import Self
 
 import torch
 import torch.nn.functional as F
 import torch.nn as nn
 
 from ._base import _HashableModule
-from bitbybit.kernel import _HashKernel, kernel_factory
+from bitbybit.kernel import kernel_factory
 
 DEFAULT_KERNEL_TYPE = "random_projection"
 DEFAULT_HASH_LENGTH = 4096
@@ -121,14 +121,14 @@ class HashLinear(_HashableModule):
 
     @classmethod
     def from_torch_module(
-        cls: type[Self],
+        cls,
         module: nn.Linear,
         input_tile_size: int = 64,
         output_tile_size: int = 64,
         hash_kernel_type: str | None = None,
         hash_length: int = DEFAULT_HASH_LENGTH,
         **kwargs,
-    ) -> Self:
+    ) -> HashLinear:
         """
         Creates a HashLinear layer from an nn.Linear module.
         Args:

@@ -3,18 +3,23 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 from pathlib import Path
 import torch
-from src.bitbybit.utils.models import get_backbone
-from src.bitbybit.utils.data import (
+import copy
+from bitbybit.utils.models import get_backbone
+from bitbybit.utils.data import (
     get_loaders,
     CIFAR10_MEAN,
     CIFAR10_STD,
     CIFAR100_MEAN,
     CIFAR100_STD,
 )
-from src import bitbybit as bb
+import bitbybit as bb
+from bitbybit.config.resnet20 import resnet20_full_patch_config, submission_config_cifar10, submission_config_cifar100
 
-from src.train.logger import get_writer
-from src.train.trainer import train_model, evaluate_model
+from train.logger import get_writer
+from train.trainer import train_model, evaluate_model
+
+# Import evaluation utilities
+from test.evaluation import evaluate_accuracy, compute_score
 
 def main():
     # Determine device
@@ -49,37 +54,52 @@ def main():
 
     # Define models to train
     models = [
-        ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader),
-        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader),
+        ("cifar10_resnet20", get_backbone("cifar10_resnet20"), cifar_10_train_loader, cifar_10_test_loader, submission_config_cifar10),
+        ("cifar100_resnet20", get_backbone("cifar100_resnet20"), cifar_100_train_loader, cifar_100_test_loader, submission_config_cifar100),
     ]
 
     # Common hyperparameters
-    num_epochs = 10
+    num_epochs = 5
     learning_rate = 0.001
 
-    for model_name, model, train_loader, test_loader in models:
+    for model_name, model, train_loader, test_loader, model_patch in models:
         print(f"Starting training for {model_name} on device {device}")
 
+        # Keep a copy of the original pretrained model for scoring
+        original_model = copy.deepcopy(model)
+        original_model.to(device)
+    
         # Patch the model with hash kernels
-        hashed_model = bb.patch_model(model)
+        hashed_model = bb.patch_model(model, config=model_patch)
         hashed_model.to(device)
-
+    
         # Initialize loss and optimizer
         criterion = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(hashed_model.parameters(), lr=learning_rate)
-
+        # Freeze all parameters except learned projection matrices
+        for param in hashed_model.parameters():
+            param.requires_grad = False
+        # Unfreeze learned projection matrices
+        for module in hashed_model.modules():
+            if isinstance(module, bb.LearnedProjKernel):
+                module.projection_matrix.requires_grad = True
+        optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, hashed_model.parameters()), lr=learning_rate)
+    
         # Initialize TensorBoard writer
         writer = get_writer(str(OUTPUT_DIR), model_name)
-
-        # Train and evaluate
+    
+        # Train and evaluate (now passing original_model to compute scores)
         train_model(
-            model=hashed_model,
-            train_loader=train_loader,
-            criterion=criterion,
-            optimizer=optimizer,
-            num_epochs=num_epochs,
-            device=device,
-            writer=writer,
+            hashed_model,
+            original_model,
+            train_loader,
+            test_loader,
+            criterion,
+            optimizer,
+            num_epochs,
+            device,
+            writer,
+            OUTPUT_DIR,
+            model_name,
             log_interval=50,  # Log every 50 batches
         )
 
@@ -93,13 +113,21 @@ def main():
             epoch=num_epochs,
         )
 
-        # Save the hashed model checkpoint
-        checkpoint_path = OUTPUT_DIR / f"{model_name}.pth"
-        torch.save(hashed_model.state_dict(), checkpoint_path)
-        print(f"Saved model checkpoint to {checkpoint_path} with final accuracy: {accuracy:.2f}%")
+        # Compute hashed_model accuracy (redundant with evaluate_model's logged accuracy),
+        # but use evaluate_accuracy for consistency in scoring
+        hashed_accuracy = evaluate_accuracy(hashed_model, test_loader, device)
+        print(f"[{model_name}] Hashed Model Accuracy (post-hashing/training): {hashed_accuracy:.2f}%")
+
+        # Compute submission score, using orig_accuracy computed earlier
+        _, _, submission_score = compute_score(original_model, hashed_model, test_loader, device)
+        print(f"[{model_name}] Submission Score: {submission_score:.4f}")
+        # Log hashed_accuracy and submission_score to TensorBoard at final epoch
+        writer.add_scalar("Evaluation/Hashed_Accuracy", hashed_accuracy, num_epochs)
+        writer.add_scalar("Score/Submission_Score", submission_score, num_epochs)
 
         # Close the TensorBoard writer
         writer.close()
 
 if __name__ == "__main__":
+    print(">>> Launching train_max.py", flush=True)
     main()
