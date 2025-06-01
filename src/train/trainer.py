@@ -4,6 +4,7 @@ from torch.utils.tensorboard import SummaryWriter
 import torch.nn as nn
 from test.evaluation import compute_score
 from pathlib import Path
+import os
 import bitbybit as bb
 
 def get_learned_proj_kernels(model: nn.Module) -> list[bb.LearnedProjKernel]:
@@ -102,6 +103,12 @@ def train_model(model: torch.nn.Module,
         orig_acc, hashed_acc, score = compute_score(original_model, model, test_loader, device)
         print(f"[Epoch {epoch+1}/{num_epochs}] Submission Score: {score:.4f}")
         writer.add_scalar("Score/Submission_Score", score, epoch + 1)
+        
+        # Write accuracy to log file
+        log_dir = Path(os.path.dirname(writer.log_dir))
+        log_file = log_dir / "accuracy_log.txt"
+        with open(log_file, "a") as f:
+            f.write(f"Epoch {epoch}: Submission Score = {score:.4f}\n")
 
         # Save checkpoint on first epoch or if submission score improves
         if epoch == 0 or score > best_score:
@@ -148,4 +155,9 @@ def evaluate_model(model: torch.nn.Module,
     writer.add_scalar("Test/Loss", avg_test_loss, epoch)
     writer.add_scalar("Validation/Accuracy", accuracy, epoch)
 
+    # Write accuracy to log file
+    log_dir = Path(os.path.dirname(writer.log_dir))
+    log_file = log_dir / "accuracy_log.txt"
+    with open(log_file, "a") as f:
+        f.write(f"Epoch {epoch}: Accuracy = {accuracy:.2f}%\n")
     return accuracy
