@@ -256,43 +256,43 @@ submission_config_cifar10 = {
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     },
     "layer3.0.conv2": { # (64 in, 64 out)
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     },
     "layer3.0.downsample.0": { # Downsample conv (32 in, 64 out)
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     },
     "layer3.1.conv1": { # (64 in, 64 out)
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     },
     "layer3.1.conv2": { # (64 in, 64 out)
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     },
     "layer3.2.conv1": { # (64 in, 64 out)
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     },
     "layer3.2.conv2": { # (64 in, 64 out)
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     },
 
     # --- Fully Connected Layer (64 in_features, 10 out_features) ---
@@ -300,7 +300,7 @@ submission_config_cifar10 = {
         "hash_kernel_type": "learned_projection",
         "input_tile_size": 256,
         "output_tile_size": 256,
-        "hash_length": 1024
+        "hash_length": 2048
     }
 }
 
