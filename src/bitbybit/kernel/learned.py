@@ -4,7 +4,6 @@ import math
 
 from ._base import _HashKernel
 
-
 class LearnedProjKernel(_HashKernel):
 
     def __init__(
