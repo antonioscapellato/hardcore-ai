@@ -232,4 +232,4 @@ def genetic_train(
     for layer in sorted([k for k in best_config if k not in ["common_params", "learning_rate"]]):
         log_message(f"  {layer}.hash_length: {best_config[layer]['hash_length']}", log_path)
     log_message(f"  learning_rate: {best_config['learning_rate']}", log_path)
-return best_model, best_score
+    return best_model, best_score
