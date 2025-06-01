@@ -1,6 +1,11 @@
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
+import sys
+import os
+# Add the src directory to the Python path
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
 from pathlib import Path
 import torch
 import copy
