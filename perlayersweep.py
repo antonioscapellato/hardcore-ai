@@ -36,6 +36,7 @@ def sweep_hash_lengths(
     base_cfg: dict,
     backbone_name: str,
     test_loader,
+    base_acc,
     tol_pp: float = 0.2,
     candidates=(64, 128, 256, 512, 1024, 2048),
     device: str = "cuda:0",
@@ -46,8 +47,6 @@ def sweep_hash_lengths(
     accuracy within `tol_pp` of the current best.
     """
     print(f"⏳ running baseline on device {device} …")
-    model = bb.patch_model(model, config=base_cfg)
-    base_acc = validate_model(device, model, test_loader)
     print(f" {backbone_name}  baseline = {base_acc:.2f}%")
 
     new_cfg = copy.deepcopy(base_cfg)
@@ -108,11 +107,13 @@ def main():
     ]
 
     for model_name, model, train_loader, test_loader in models:
+        accuracy_base = validate_model(DEVICE, model, test_loader)
       
         cfg10_best = sweep_hash_lengths(
             base_cfg=resnet20_full_patch_config_random,
             backbone_name=model_name,
             test_loader=test_loader,
+            base_acc=accuracy_base,
             device=DEVICE,
             model=model,
         )
