@@ -58,3 +58,12 @@ Submissions are unlimited within the 24‑hour window; the server keeps your bes
 ## Scoring
 
 Evaluation lives in `bitbybit.utils.score.calculate_submission_score`.
+
+
+### Final Results
+### 2nd Place (0.40 Scoring - 5% Acc. Drop)
+### Team
+- [Antonio Scapellato](https://github.com/antonioscapellato)
+- [Bob Johnson](https://github.com/massimopiazza)
+- [Carol Lee](https://github.com/nlune)
+- [David Kim](https://github.com/MihaCim)
